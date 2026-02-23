@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="IEP منصة">
+<meta name="application-name" content="IEP منصة">
+<meta name="theme-color" content="#0A1628">
+<link rel="apple-touch-icon" id="apple-icon">
+<title>منصة الخطط التربوية — المدرسة الفنلندية العمانية</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root{
+  --navy:#0A1628;--blue:#1565C0;--sky:#2196F3;--teal:#00897B;
+  --gold:#F9A825;--red:#C62828;--green:#2E7D32;--purple:#4527A0;
+  --bg:#EEF2F7;--card:#fff;--border:#CBD5E1;--text:#1E293B;--muted:#64748B;
+  --shadow:0 2px 12px rgba(0,0,0,0.09);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{font-family:"Tajawal",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+/* LOGIN */
+#login-screen{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(150deg,#030d1a 0%,#0d2137 35%,#1565c0 65%,#0d2137 100%);
+  padding:20px;position:relative;overflow:hidden;
+}
+#login-screen::before{content:"";position:absolute;inset:0;
+  background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(33,150,243,.18) 0%,transparent 70%),
+             radial-gradient(ellipse 40% 40% at 80% 80%,rgba(249,168,37,.1) 0%,transparent 60%);}
+.login-box{background:rgba(255,255,255,.07);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+  border:1px solid rgba(255,255,255,.15);border-radius:24px;padding:40px 36px;
+  width:100%;max-width:400px;box-shadow:0 32px 80px rgba(0,0,0,.55);position:relative;z-index:1;}
+.login-logo{text-align:center;margin-bottom:28px;}
+.login-logo img{width:96px;height:96px;object-fit:contain;border-radius:22px;
+  background:rgba(255,255,255,.92);padding:6px;box-shadow:0 8px 30px rgba(0,0,0,.35);}
+.login-logo h1{font-size:20px;font-weight:900;color:#fff;margin-top:16px;line-height:1.35;}
+.platform-tagline{font-size:15px;font-weight:700;color:#7eb8f7;letter-spacing:4px;margin-top:6px;margin-bottom:2px;}
+.login-logo .school{font-size:13px;font-weight:700;color:var(--gold);margin-top:5px;}
+.lf{margin-bottom:16px;}
+.lf label{display:block;font-size:11px;font-weight:800;color:rgba(255,255,255,.6);margin-bottom:6px;letter-spacing:.8px;text-transform:uppercase;}
+.lf select,.lf input{width:100%;padding:13px 14px;border-radius:12px;
+  border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.09);
+  color:#fff;font-family:inherit;font-size:14px;direction:rtl;transition:all .2s;-webkit-appearance:none;}
+.lf select:focus,.lf input:focus{outline:none;border-color:var(--gold);background:rgba(255,255,255,.14);}
+.lf select option{background:#1a2a4a;color:#fff;}
+.lf input::placeholder{color:rgba(255,255,255,.35);}
+.btn-login{width:100%;padding:15px;border-radius:12px;border:none;
+  background:linear-gradient(135deg,#F9A825,#FFB300);color:var(--navy);
+  font-family:inherit;font-size:15px;font-weight:900;cursor:pointer;
+  margin-top:8px;transition:all .2s;box-shadow:0 4px 20px rgba(249,168,37,.4);}
+.btn-login:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(249,168,37,.5);}
+.login-error{color:#FF6B6B;font-size:12px;text-align:center;margin-top:10px;display:none;font-weight:700;}
+.login-hint{margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,.1);
+  text-align:center;font-size:10px;color:rgba(255,255,255,.3);line-height:1.8;}
+
+/* APP */
+#app-screen{display:none;}
+
+/* HEADER */
+#top-header{background:linear-gradient(135deg,#030d1a 0%,#0d2137 45%,#1a3a6b 100%);
+  padding:9px 16px;display:flex;align-items:center;gap:12px;
+  border-bottom:3px solid var(--gold);position:sticky;top:0;z-index:200;
+  box-shadow:0 4px 20px rgba(0,0,0,.45);}
+.header-logo-img{width:38px;height:38px;object-fit:contain;border-radius:9px;
+  background:rgba(255,255,255,.9);padding:3px;flex-shrink:0;}
+.header-title{flex:1;text-align:center;}
+.header-title h1{font-size:15px;font-weight:900;color:#fff;line-height:1.25;}
+.header-title .school-name{font-size:11px;color:var(--gold);font-weight:700;}
+.user-pill{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.15);
+  border-radius:20px;padding:5px 11px;display:flex;align-items:center;gap:7px;flex-shrink:0;}
+.u-av{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;}
+.u-name{font-size:11px;font-weight:700;color:#fff;}
+.u-role{font-size:10px;color:rgba(255,255,255,.5);}
+.btn-logout{background:rgba(220,53,69,.2);border:1px solid rgba(220,53,69,.4);
+  color:#ff6b6b;border-radius:8px;padding:6px 11px;font-family:inherit;
+  font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0;}
+.btn-logout:hover{background:rgba(220,53,69,.4);}
+
+/* DASHBOARD */
+#dashboard{padding:18px;max-width:1240px;margin:0 auto;}
+.dash-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
+.dash-header h2{font-size:18px;font-weight:900;color:var(--navy);}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+.stat-card{background:var(--card);border-radius:14px;padding:14px 12px;box-shadow:var(--shadow);
+  border-top:3px solid;text-align:center;transition:transform .2s;}
+.stat-card:hover{transform:translateY(-2px);}
+.stat-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;
+  justify-content:center;margin:0 auto 8px;font-size:16px;}
+.stat-val{font-size:26px;font-weight:900;line-height:1;}
+.stat-label{font-size:11px;color:var(--muted);margin-top:3px;font-weight:600;}
+
+/* CHARTS */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:18px;}
+.chart-card{background:var(--card);border-radius:14px;padding:16px;box-shadow:var(--shadow);}
+.chart-card h4{font-size:12px;font-weight:800;color:var(--navy);margin-bottom:12px;
+  padding-bottom:8px;border-bottom:2px solid #EEF2F7;display:flex;align-items:center;gap:6px;}
+.chart-card h4 .ch-icon{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;
+  justify-content:center;font-size:11px;}
+.chart-wrap{position:relative;height:170px;}
+
+/* STUDENTS */
+.students-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(275px,1fr));gap:14px;}
+.student-card{background:var(--card);border-radius:14px;padding:16px;box-shadow:var(--shadow);
+  border-right:4px solid;transition:all .25s;}
+.student-card:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.13);}
+.sc-top{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.s-av{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;
+  justify-content:center;font-size:15px;font-weight:900;flex-shrink:0;}
+.student-card h3{font-size:14px;font-weight:800;color:var(--navy);margin-bottom:2px;}
+.s-grade{font-size:11px;color:var(--muted);}
+.s-dis{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:3px;}
+.sc-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.sc-tag{font-size:10px;font-weight:600;padding:3px 8px;border-radius:8px;background:var(--bg);color:var(--muted);}
+.sc-actions{display:flex;gap:7px;margin-top:12px;}
+.btn-open{flex:1;padding:9px;border-radius:9px;border:none;background:var(--blue);
+  color:#fff;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;}
+.btn-open:hover{background:#1251A3;transform:translateY(-1px);}
+.btn-del{padding:9px 11px;border-radius:9px;border:1.5px solid var(--border);
+  background:transparent;color:var(--muted);font-family:inherit;font-size:11px;cursor:pointer;transition:all .2s;}
+.btn-del:hover{background:#FFEBEE;color:var(--red);border-color:var(--red);}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:500;
+  display:flex;align-items:center;justify-content:center;padding:16px;
+  opacity:0;pointer-events:none;transition:opacity .2s;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{background:#fff;border-radius:18px;padding:26px;width:100%;max-width:480px;
+  box-shadow:0 24px 70px rgba(0,0,0,.35);transform:translateY(18px);
+  transition:transform .2s;max-height:88vh;overflow-y:auto;}
+.modal-overlay.open .modal{transform:translateY(0);}
+.modal h3{font-size:16px;font-weight:800;color:var(--navy);margin-bottom:16px;
+  padding-bottom:10px;border-bottom:2px solid var(--bg);}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.mfg{display:flex;flex-direction:column;gap:4px;}
+.mfg label{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+.mfg input,.mfg select{border:1.5px solid var(--border);border-radius:8px;padding:9px 11px;
+  font-family:inherit;font-size:13px;direction:rtl;background:#FAFCFF;transition:border-color .2s;}
+.mfg input:focus,.mfg select:focus{outline:none;border-color:var(--sky);box-shadow:0 0 0 3px rgba(33,150,243,.12);}
+.modal-actions{display:flex;gap:8px;margin-top:18px;}
+.modal-actions .btn-primary{flex:1;}
+
+/* ADMIN */
+#admin-panel{background:var(--card);border-radius:14px;padding:20px;box-shadow:var(--shadow);margin-bottom:18px;display:none;}
+#admin-panel h3{font-size:16px;font-weight:800;color:var(--navy);margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid var(--bg);}
+#users-table{width:100%;border-collapse:collapse;margin-bottom:20px;}
+#users-table th{background:var(--bg);padding:10px;text-align:right;font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+#users-table td{padding:11px;border-bottom:1px solid var(--border);font-size:13px;}
+.role-badge{display:inline-block;padding:3px 9px;border-radius:8px;font-size:10px;font-weight:700;}
+.role-teacher{background:#E3F2FD;color:var(--blue);}
+.role-speech{background:#E8F5E9;color:var(--green);}
+
+/* IEP FRAME */
+#iep-frame-container{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:999;
+  display:none;align-items:center;justify-content:center;padding:0;}
+#iep-frame-container.open{display:flex;}
+#iep-frame-box{background:#fff;width:100%;height:100%;display:flex;flex-direction:column;}
+#frame-header{background:linear-gradient(135deg,#030d1a,#0d2137);padding:10px 18px;
+  display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--gold);}
+#frame-header h3{font-size:14px;font-weight:800;color:#fff;}
+#btn-close-frame{background:rgba(220,53,69,.3);border:1px solid rgba(220,53,69,.5);
+  color:#ff6b6b;border-radius:8px;padding:7px 14px;font-family:inherit;
+  font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;}
+#btn-close-frame:hover{background:rgba(220,53,69,.5);}
+#iep-iframe{flex:1;border:none;width:100%;background:#fff;}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .stats-row{grid-template-columns:1fr 1fr;}
+  .charts-grid{grid-template-columns:1fr;}
+  .students-grid{grid-template-columns:1fr;}
+  .form-grid,.form-grid-3,.modal-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- ════ LOGIN SCREEN ════ -->
+<div id="login-screen">
+<div class="login-box">
+  <div class="login-logo">
+    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%230A1628' width='100' height='100'/%3E%3Ctext x='50' y='58' font-family='Arial,sans-serif' font-size='48' font-weight='900' fill='%23F9A825' text-anchor='middle'%3EIEP%3C/text%3E%3C/svg%3E" alt="IEP">
+    <div class="platform-tagline">IEP</div>
+    <h1>منصة الخطط التربوية الفردية</h1>
+    <p class="school">المدرسة الفنلندية العمانية</p>
+  </div>
+  <form id="login-form" onsubmit="login(event)">
+    <div class="lf">
+      <label>اسم المستخدم</label>
+      <select id="login-user" required>
+        <option value="">اختر المستخدم...</option>
+      </select>
+    </div>
+    <div class="lf">
+      <label>كلمة المرور</label>
+      <input type="password" id="login-pass" placeholder="أدخل كلمة المرور" required>
+    </div>
+    <button type="submit" class="btn-login">تسجيل الدخول</button>
+    <div id="login-error" class="login-error"></div>
+  </form>
+  <div class="login-hint">
+    💡 المسؤول: admin | المعلمون: 1234<br>
+    منصة آمنة لإدارة الخطط التربوية الفردية
+  </div>
+</div>
+</div>
+
+<!-- ════ APP SCREEN ════ -->
+<div id="app-screen">
+
+<!-- HEADER -->
+<div id="top-header">
+  <img class="header-logo-img" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%230A1628' width='100' height='100'/%3E%3Ctext x='50' y='58' font-family='Arial,sans-serif' font-size='48' font-weight='900' fill='%23F9A825' text-anchor='middle'%3EIEP%3C/text%3E%3C/svg%3E" alt="Logo">
+  <div class="header-title">
+    <h1>منصة الخطط التربوية الفردية</h1>
+    <div class="school-name">المدرسة الفنلندية العمانية</div>
+  </div>
+  <div class="user-pill">
+    <div class="u-av" id="user-avatar"></div>
+    <div>
+      <div class="u-name" id="user-name"></div>
+      <div class="u-role" id="user-role"></div>
+    </div>
+  </div>
+  <button class="btn-logout" onclick="logout()">تسجيل خروج</button>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+
+<!-- ADMIN PANEL -->
+<div id="admin-panel">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+    <h3 style="margin:0;padding:0;border:none;">لوحة الإدارة</h3>
+    <button class="btn-primary btn-sm" onclick="openAddUser()">➕ إضافة مستخدم</button>
+  </div>
+  <table id="users-table">
+    <thead><tr><th>الاسم</th><th>الدور</th><th>اسم المستخدم</th><th>الطلاب</th><th>إجراءات</th></tr></thead>
+    <tbody id="users-tbody"></tbody>
+  </table>
+  <h3>جميع الطلاب في النظام</h3>
+  <div id="all-students-grid" class="students-grid"></div>
+</div>
+
+<!-- STATS -->
+<div class="stats-row" id="stats-row"></div>
+
+<!-- CHARTS -->
+<div class="charts-grid">
+  <div class="chart-card">
+    <h4><span class="ch-icon" style="background:#E3F2FD;color:var(--blue)">📊</span>التوزيع حسب الإعاقة</h4>
+    <div class="chart-wrap"><canvas id="chart-dis"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <h4><span class="ch-icon" style="background:#E8F5E9;color:var(--green)">📈</span>التوزيع حسب الصف</h4>
+    <div class="chart-wrap"><canvas id="chart-grade"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <h4><span class="ch-icon" style="background:#FFF3E0;color:var(--gold)">👥</span>التوزيع حسب الجنس</h4>
+    <div class="chart-wrap"><canvas id="chart-gender"></canvas></div>
+  </div>
+</div>
+
+<!-- STUDENTS -->
+<div class="dash-header">
+  <h2 id="students-title">طلابي</h2>
+  <button class="btn-primary btn-sm" onclick="openAddStudent()">➕ إضافة طالب</button>
+</div>
+<div id="students-grid" class="students-grid"></div>
+
+</div>
+</div>
+
+<!-- ════ IEP FRAME ════ -->
+<div id="iep-frame-container">
+<div id="iep-frame-box">
+  <div id="frame-header">
+    <h3>الخطة التربوية الفردية — <span id="frame-student-name"></span></h3>
+    <button id="btn-close-frame" onclick="closeIEPFrame()">✕ إغلاق</button>
+  </div>
+  <iframe id="iep-iframe" src="about:blank"></iframe>
+</div>
+</div>
+
+<!-- ════ MODALS ════ -->
+
+<!-- ADD STUDENT -->
+<div class="modal-overlay" id="add-student-modal">
+<div class="modal">
+  <h3>إضافة طالب جديد</h3>
+  <div class="modal-grid">
+    <div class="mfg"><label>الاسم الكامل</label><input type="text" id="ns-name"></div>
+    <div class="mfg"><label>الجنس</label>
+      <select id="ns-gender">
+        <option value="ذكر">ذكر</option>
+        <option value="أنثى">أنثى</option>
+      </select>
+    </div>
+    <div class="mfg"><label>الصف</label>
+      <select id="ns-grade">
+        <option>الروضة 1</option><option>الروضة 2</option>
+        <option>الصف 1</option><option>الصف 2</option><option>الصف 3</option>
+        <option>الصف 4</option><option>الصف 5</option><option>الصف 6</option>
+        <option>الصف 7</option><option>الصف 8</option><option>الصف 9</option>
+      </select>
+    </div>
+    <div class="mfg"><label>نوع الإعاقة</label>
+      <select id="ns-dis">
+        <option>صعوبات تعلم</option><option>اضطراب طيف التوحد</option>
+        <option>اضطراب نطق ولغة</option><option>إعاقة ذهنية</option>
+        <option>فرط حركة</option><option>صعوبات انتباه</option><option>أخرى</option>
+      </select>
+    </div>
+    <div class="mfg"><label>تاريخ الميلاد</label><input type="date" id="ns-dob"></div>
+    <div class="mfg"><label>المعلم المسؤول</label><select id="ns-teacher"></select></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn-primary" onclick="saveNewStudent()">✓ حفظ</button>
+    <button class="btn-ghost" onclick="closeModal('add-student-modal')">إلغاء</button>
+  </div>
+</div>
+</div>
+
+<!-- ADD USER -->
+<div class="modal-overlay" id="add-user-modal">
+<div class="modal">
+  <h3>إضافة مستخدم جديد</h3>
+  <div class="modal-grid">
+    <div class="mfg" style="grid-column:1/-1;"><label>الاسم الكامل</label><input type="text" id="nu-name"></div>
+    <div class="mfg"><label>اسم المستخدم</label><input type="text" id="nu-username"></div>
+    <div class="mfg"><label>كلمة المرور</label><input type="password" id="nu-pass"></div>
+    <div class="mfg" style="grid-column:1/-1;"><label>الدور</label>
+      <select id="nu-role">
+        <option value="teacher">أخصائية/أخصائي تربية خاصة</option>
+        <option value="speech">أخصائية/أخصائي نطق ولغة</option>
+      </select>
+    </div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn-primary" onclick="saveNewUser()">✓ حفظ</button>
+    <button class="btn-ghost" onclick="closeModal('add-user-modal')">إلغاء</button>
+  </div>
+</div>
+</div>
+
+<script>
+const LOGO_DATA='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Crect fill="%230A1628" width="100" height="100"/%3E%3Ctext x="50" y="58" font-family="Arial,sans-serif" font-size="48" font-weight="900" fill="%23F9A825" text-anchor="middle"%3EIEP%3C/text%3E%3C/svg%3E';
+
+// DATABASE
+const DB_KEY='iep_db_v2';
+function loadDB(){
+  const raw=localStorage.getItem(DB_KEY);
+  if(raw)return JSON.parse(raw);
+  const init={
+    users:[
+      {id:'admin',name:'المسؤول',username:'admin',password:'admin',role:'admin',color:'#1565C0',avatar:'م'},
+      {id:'u1',name:'فاطمة الحارثي',username:'fatima',password:'1234',role:'teacher',color:'#2E7D32',avatar:'ف'},
+      {id:'u2',name:'خالد البلوشي',username:'khaled',password:'1234',role:'speech',color:'#880E4F',avatar:'خ'}
+    ],
+    students:[],
+    lastUpdated:Date.now()
+  };
+  saveDB(init);return init;
+}
+function saveDB(db){db.lastUpdated=Date.now();localStorage.setItem(DB_KEY,JSON.stringify(db));}
+
+// AUTH
+let currentUser=null;
+function populateLoginDropdown(){
+  const db=loadDB();const sel=document.getElementById('login-user');
+  sel.innerHTML='<option value="">اختر المستخدم...</option>';
+  db.users.forEach(u=>sel.innerHTML+=`<option value="${u.id}">${u.name} — ${u.role==='admin'?'المسؤول':u.role==='teacher'?'تربية خاصة':'نطق ولغة'}</option>`);
+}
+function login(e){
+  e.preventDefault();
+  const db=loadDB();const uid=document.getElementById('login-user').value;
+  const pass=document.getElementById('login-pass').value;
+  const u=db.users.find(x=>x.id===uid);
+  if(!u||u.password!==pass){
+    document.getElementById('login-error').textContent='بيانات خاطئة';
+    document.getElementById('login-error').style.display='block';return;
+  }
+  currentUser=u;sessionStorage.setItem('currentUser',u.id);
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app-screen').style.display='block';
+  renderDashboard();
+}
+function tryAutoLogin(){
+  const sid=sessionStorage.getItem('currentUser');
+  if(!sid)return false;
+  const db=loadDB();const u=db.users.find(x=>x.id===sid);
+  if(!u)return false;
+  currentUser=u;
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app-screen').style.display='block';
+  renderDashboard();return true;
+}
+function logout(){
+  if(!confirm('تسجيل الخروج؟'))return;
+  sessionStorage.removeItem('currentUser');currentUser=null;
+  location.reload();
+}
+
+// DASHBOARD
+function renderDashboard(){
+  const db=loadDB();
+  document.getElementById('user-avatar').textContent=currentUser.avatar;
+  document.getElementById('user-avatar').style.background=currentUser.color;
+  document.getElementById('user-name').textContent=currentUser.name;
+  document.getElementById('user-role').textContent=
+    currentUser.role==='admin'?'المسؤول':currentUser.role==='teacher'?'أخصائي تربية خاصة':'أخصائي نطق ولغة';
+  
+  const myStudents=currentUser.role==='admin'?db.students:db.students.filter(s=>s.teacherId===currentUser.id);
+  document.getElementById('students-title').textContent=currentUser.role==='admin'?'جميع الطلاب':'طلابي';
+  
+  const statsRow=document.getElementById('stats-row');
+  statsRow.innerHTML='';
+  const stats=[
+    {label:'إجمالي الطلاب',val:myStudents.length,color:'var(--blue)',bg:'#E3F2FD',icon:'👥'},
+    {label:'خطط نشطة',val:myStudents.filter(s=>s.iepData).length,color:'var(--green)',bg:'#E8F5E9',icon:'📋'},
+    {label:'ذكور',val:myStudents.filter(s=>s.gender==='ذكر').length,color:'var(--sky)',bg:'#E1F5FE',icon:'🧑'},
+    {label:'إناث',val:myStudents.filter(s=>s.gender==='أنثى').length,color:'var(--purple)',bg:'#F3E5F5',icon:'👧'}
+  ];
+  stats.forEach(st=>
+    statsRow.innerHTML+=`<div class="stat-card" style="border-color:${st.color}">
+      <div class="stat-icon" style="background:${st.bg};color:${st.color}">${st.icon}</div>
+      <div class="stat-val" style="color:${st.color}">${st.val}</div>
+      <div class="stat-label">${st.label}</div></div>`);
+  
+  renderCharts(myStudents);
+  renderStudentsGrid(myStudents,'students-grid',db);
+  
+  if(currentUser.role==='admin'){
+    document.getElementById('admin-panel').style.display='block';
+  }else{
+    document.getElementById('admin-panel').style.display='none';
+  }
+}
+
+function renderCharts(students){
+  const disC={};students.forEach(s=>disC[s.dis]=(disC[s.dis]||0)+1);
+  new Chart(document.getElementById('chart-dis'),{type:'doughnut',
+    data:{labels:Object.keys(disC),datasets:[{data:Object.values(disC),
+      backgroundColor:['#1565C0','#2E7D32','#880E4F','#4527A0','#00695C','#C62828','#E65100']}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10,family:'Tajawal',weight:'700'}}}}}});
+  
+  const gradeC={};students.forEach(s=>gradeC[s.grade]=(gradeC[s.grade]||0)+1);
+  new Chart(document.getElementById('chart-grade'),{type:'bar',
+    data:{labels:Object.keys(gradeC),datasets:[{label:'عدد الطلاب',data:Object.values(gradeC),backgroundColor:'#2E7D32'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{font:{family:'Tajawal'}}}}}});
+  
+  const genderC={};students.forEach(s=>genderC[s.gender]=(genderC[s.gender]||0)+1);
+  new Chart(document.getElementById('chart-gender'),{type:'pie',
+    data:{labels:Object.keys(genderC),datasets:[{data:Object.values(genderC),backgroundColor:['#2196F3','#6A1B9A']}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10,family:'Tajawal',weight:'700'}}}}}});
+}
+
+function renderStudentsGrid(students,gridId,db){
+  const grid=document.getElementById(gridId);
+  grid.innerHTML=students.map(s=>{
+    const teacher=db.users.find(u=>u.id===s.teacherId);
+    const tname=teacher?teacher.name:'غير محدد';
+    const disColors={'صعوبات تعلم':'#1565C0','اضطراب طيف التوحد':'#2E7D32','اضطراب نطق ولغة':'#880E4F','إعاقة ذهنية':'#4527A0','فرط حركة':'#00695C','صعوبات انتباه':'#C62828','أخرى':'#E65100'};
+    const disC=disColors[s.dis]||'#64748B';
+    const av=s.name[0];
+    return `<div class="student-card" style="border-color:${disC}">
+      <div class="sc-top">
+        <div class="s-av" style="background:${disC};color:#fff">${av}</div>
+        <div style="flex:1">
+          <h3>${s.name}</h3>
+          <div class="s-grade">${s.grade}</div>
+          <div class="s-dis" style="background:${disC}20;color:${disC}">${s.dis}</div>
+        </div>
+      </div>
+      <div class="sc-meta">
+        <span class="sc-tag">📅 ${s.dob||'غير محدد'}</span>
+        <span class="sc-tag">👤 ${tname}</span>
+        ${s.iepData?'<span class="sc-tag" style="background:#E8F5E9;color:var(--green)">✓ خطة نشطة</span>':''}
+      </div>
+      <div class="sc-actions">
+        <button class="btn-open" onclick="openIEPFrame('${s.id}')">📋 فتح الخطة</button>
+        ${currentUser.role==='admin'||s.teacherId===currentUser.id?`<button class="btn-del" onclick="deleteStudent('${s.id}')">🗑</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// IEP FRAME
+function openIEPFrame(studentId){
+  const db=loadDB();
+  const student=db.students.find(s=>s.id===studentId);if(!student)return;
+  document.getElementById('frame-student-name').textContent=student.name;
+  const iframe=document.getElementById('iep-iframe');
+  iframe.src='iep.html';
+  iframe.onload=()=>{
+    iframe.contentWindow.postMessage({
+      type:'LOAD_STUDENT',studentId:student.id,
+      studentName:student.name,studentGrade:student.grade,
+      studentGender:student.gender,studentDis:student.dis,
+      studentDob:student.dob,iepData:student.iepData
+    },'*');
+  };
+  document.getElementById('iep-frame-container').classList.add('open');
+  window.addEventListener('message',handleIEPMessage);
+}
+function handleIEPMessage(e){
+  if(e.data&&e.data.type==='SAVE_IEP'){
+    const db=loadDB();
+    const s=db.students.find(st=>st.id===e.data.studentId);
+    if(s){s.iepData=e.data.data;db.lastUpdated=Date.now();saveDB(db);
+      showToast('تم الحفظ التلقائي — '+s.name);renderDashboard();}
+  }
+}
+function closeIEPFrame(){
+  document.getElementById('iep-frame-container').classList.remove('open');
+  document.getElementById('iep-iframe').src='about:blank';
+  window.removeEventListener('message',handleIEPMessage);
+  renderDashboard();
+}
+
+// STUDENT CRUD
+function openAddStudent(){
+  const db=loadDB();const sel=document.getElementById('ns-teacher');
+  sel.innerHTML='';
+  db.users.filter(u=>u.role!=='admin').forEach(u=>{
+    const lbl={teacher:'أخصائية تربية خاصة',speech:'أخصائية نطق ولغة'}[u.role]||u.role;
+    sel.innerHTML+=`<option value="${u.id}">${u.name} — ${lbl}</option>`;
+  });
+  if(currentUser.role!=='admin')sel.value=currentUser.id;
+  openModal('add-student-modal');
+}
+function saveNewStudent(){
+  const name=document.getElementById('ns-name').value.trim();
+  if(!name){alert('أدخل اسم الطالب');return;}
+  const db=loadDB();
+  db.students.push({id:'s'+Date.now(),name,
+    gender:document.getElementById('ns-gender').value,
+    grade:document.getElementById('ns-grade').value,
+    dis:document.getElementById('ns-dis').value,
+    dob:document.getElementById('ns-dob').value,
+    teacherId:document.getElementById('ns-teacher').value,iepData:null});
+  saveDB(db);closeModal('add-student-modal');renderDashboard();
+  showToast('تمت إضافة الطالب: '+name);
+  ['ns-name','ns-grade','ns-dis','ns-dob'].forEach(id=>document.getElementById(id).value='');
+}
+function deleteStudent(id){
+  const db=loadDB();const s=db.students.find(st=>st.id===id);
+  if(!s||!confirm('حذف الطالب "'+s.name+'" وجميع بياناته؟'))return;
+  db.students=db.students.filter(st=>st.id!==id);saveDB(db);renderDashboard();
+  showToast('تم حذف: '+s.name);
+}
+
+// ADMIN
+function showAdminPanel(){
+  const p=document.getElementById('admin-panel');
+  p.style.display=p.style.display==='none'?'block':'none';
+  if(p.style.display==='block')renderAdminPanel();
+}
+function renderAdminPanel(){
+  const db=loadDB();
+  const tbody=document.getElementById('users-tbody');
+  tbody.innerHTML=db.users.filter(u=>u.role!=='admin').map(u=>{
+    const cnt=db.students.filter(s=>s.teacherId===u.id).length;
+    const rc=u.role==='teacher'?'role-teacher':'role-speech';
+    const rl={teacher:'أخصائية/أخصائي تربية خاصة',speech:'أخصائية/أخصائي نطق ولغة'}[u.role]||u.role;
+    return `<tr><td><strong>${u.name}</strong></td>
+      <td><span class="role-badge ${rc}">${rl}</span></td>
+      <td style="color:var(--muted);font-size:12px">${u.username}</td>
+      <td><strong>${cnt}</strong></td>
+      <td><button class="btn-del" onclick="deleteUser('${u.id}')" style="font-size:11px;padding:4px 10px">حذف</button></td></tr>`;
+  }).join('');
+  renderStudentsGrid(db.students,'all-students-grid',db);
+}
+function openAddUser(){openModal('add-user-modal');}
+function saveNewUser(){
+  const name=document.getElementById('nu-name').value.trim();
+  const uname=document.getElementById('nu-username').value.trim();
+  const pass=document.getElementById('nu-pass').value.trim();
+  if(!name||!uname||!pass){alert('يرجى ملء جميع الحقول');return;}
+  const db=loadDB();
+  const colors=['#1565C0','#2E7D32','#880E4F','#4527A0','#00695C','#C62828','#E65100'];
+  db.users.push({id:'u'+Date.now(),name,username:uname,password:pass,
+    role:document.getElementById('nu-role').value,
+    color:colors[db.users.length%colors.length],avatar:name[0]});
+  saveDB(db);closeModal('add-user-modal');populateLoginDropdown();renderAdminPanel();
+  showToast('تمت إضافة: '+name);
+  ['nu-name','nu-username','nu-pass'].forEach(id=>document.getElementById(id).value='');
+}
+function deleteUser(id){
+  const db=loadDB();const u=db.users.find(x=>x.id===id);
+  const cnt=db.students.filter(s=>s.teacherId===id).length;
+  if(!u)return;
+  if(cnt>0&&!confirm(`مرتبط بـ${cnt} طلاب. تأكيد الحذف؟`))return;
+  db.students.filter(s=>s.teacherId===id).forEach(s=>s.teacherId='');
+  db.users=db.users.filter(x=>x.id!==id);saveDB(db);
+  populateLoginDropdown();renderAdminPanel();renderDashboard();
+  showToast('تم حذف: '+u.name);
+}
+
+// MODALS
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-overlay').forEach(el=>
+  el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
+
+// TOAST
+function showToast(msg){
+  const t=document.getElementById('toast')||Object.assign(document.createElement('div'),
+    {id:'toast',style:'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1E293B;color:#fff;padding:12px 22px;border-radius:12px;font-size:13px;font-weight:700;z-index:9999;transition:opacity .3s;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.4)'});
+  if(!document.getElementById('toast'))document.body.appendChild(t);
+  t.textContent=msg;t.style.opacity='1';
+  clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity='0',3000);
+}
+
+// PWA MANIFEST & SHORTCUT
+function setupPWA(){
+  const manifest={name:'منصة الخطط التربوية',short_name:'IEP منصة',
+    start_url:'./iep.html',display:'standalone',background_color:'#0A1628',
+    theme_color:'#0A1628',orientation:'any',
+    icons:[{src:LOGO_DATA,sizes:'192x192',type:'image/png',purpose:'any maskable'},
+           {src:LOGO_DATA,sizes:'512x512',type:'image/png',purpose:'any maskable'}]};
+  const blob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement('link');link.rel='manifest';link.href=url;
+  document.head.appendChild(link);
+  const ai=document.getElementById('apple-icon');if(ai)ai.href=LOGO_DATA;
+}
+
+// BOOT
+populateLoginDropdown();setupPWA();
+if(!tryAutoLogin())document.getElementById('login-screen').style.display='flex';
+</script>
+</body>
+</html>
