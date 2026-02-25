@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="IEP منصة">
+<meta name="application-name" content="IEP منصة">
+<meta name="theme-color" content="#0A1628">
+<title>منصة الخطط التربوية — المدرسة الفنلندية العمانية</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+  import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBRx7RAEpbZ8dlFoZyo8N_qmQ6ctE0j71w",
+    authDomain: "iep-platform-78a8f.firebaseapp.com",
+    projectId: "iep-platform-78a8f",
+    storageBucket: "iep-platform-78a8f.firebasestorage.app",
+    messagingSenderId: "941320103398",
+    appId: "1:941320103398:web:f29afba6019129f0a0a227"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  
+  window.firebaseDB = db;
+  window.firebaseCollection = collection;
+  window.firebaseGetDocs = getDocs;
+  window.firebaseDoc = doc;
+  window.firebaseSetDoc = setDoc;
+  window.firebaseDeleteDoc = deleteDoc;
+  window.firebaseOnSnapshot = onSnapshot;
+  window.firebaseReady = true;
+  
+  console.log('✅ Firebase initialized');
+</script>
+
+<style>
+:root{
+  --navy:#0A1628;--blue:#1565C0;--sky:#2196F3;--teal:#00897B;
+  --gold:#F9A825;--red:#C62828;--green:#2E7D32;--purple:#4527A0;
+  --bg:#EEF2F7;--card:#fff;--border:#CBD5E1;--text:#1E293B;--muted:#64748B;
+  --shadow:0 2px 12px rgba(0,0,0,0.09);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{font-family:"Tajawal",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+/* LOGIN */
+#login-screen{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(150deg,#030d1a 0%,#0d2137 35%,#1565c0 65%,#0d2137 100%);
+  padding:20px;position:relative;overflow:hidden;
+}
+#login-screen::before{content:"";position:absolute;inset:0;
+  background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(33,150,243,.18) 0%,transparent 70%),
+             radial-gradient(ellipse 40% 40% at 80% 80%,rgba(249,168,37,.1) 0%,transparent 60%);}
+.login-box{background:rgba(255,255,255,.07);backdrop-filter:blur(28px);
+  border:1px solid rgba(255,255,255,.15);border-radius:24px;padding:40px 36px;
+  width:100%;max-width:400px;box-shadow:0 32px 80px rgba(0,0,0,.55);position:relative;z-index:1;}
+.login-logo{text-align:center;margin-bottom:28px;}
+.login-logo h1{font-size:20px;font-weight:900;color:#fff;margin-top:16px;line-height:1.35;}
+.platform-tagline{font-size:15px;font-weight:700;color:#7eb8f7;letter-spacing:4px;margin-top:6px;}
+.login-logo .school{font-size:13px;font-weight:700;color:var(--gold);margin-top:5px;}
+.lf{margin-bottom:16px;}
+.lf label{display:block;font-size:11px;font-weight:800;color:rgba(255,255,255,.6);margin-bottom:6px;letter-spacing:.8px;text-transform:uppercase;}
+.lf input{width:100%;padding:13px 14px;border-radius:12px;
+  border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.09);
+  color:#fff;font-family:inherit;font-size:14px;direction:rtl;transition:all .2s;}
+.lf input:focus{outline:none;border-color:var(--gold);background:rgba(255,255,255,.14);}
+.lf input::placeholder{color:rgba(255,255,255,.35);}
+.lf input.error{border-color:#FF6B6B;}
+.btn-login{width:100%;padding:15px;border-radius:12px;border:none;
+  background:linear-gradient(135deg,#F9A825,#FFB300);color:var(--navy);
+  font-family:inherit;font-size:15px;font-weight:900;cursor:pointer;
+  margin-top:8px;transition:all .2s;box-shadow:0 4px 20px rgba(249,168,37,.4);}
+.btn-login:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(249,168,37,.5);}
+.btn-login:disabled{opacity:0.5;cursor:not-allowed;}
+.login-error{color:#FF6B6B;font-size:12px;text-align:center;margin-top:10px;display:none;font-weight:700;}
+
+/* APP */
+#app-screen{display:none;}
+
+/* HEADER */
+#top-header{background:linear-gradient(135deg,#030d1a 0%,#0d2137 45%,#1a3a6b 100%);
+  padding:9px 16px;display:flex;align-items:center;gap:12px;
+  border-bottom:3px solid var(--gold);position:sticky;top:0;z-index:200;
+  box-shadow:0 4px 20px rgba(0,0,0,.45);}
+.logo-mark{width:42px;height:42px;border-radius:10px;
+  background:var(--gold);display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:900;color:var(--navy);box-shadow:0 2px 8px rgba(0,0,0,.3);}
+.header-info{flex:1;}
+.app-title{font-size:14px;font-weight:800;color:#fff;line-height:1.3;}
+.user-info-header{font-size:11px;color:rgba(255,255,255,.55);margin-top:2px;}
+.user-card{display:flex;align-items:center;gap:10px;cursor:pointer;
+  padding:6px 10px;border-radius:10px;transition:all .2s;}
+.user-card:hover{background:rgba(255,255,255,.08);}
+#user-avatar{width:36px;height:36px;border-radius:50%;
+  background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:16px;font-weight:800;}
+.user-details{text-align:left;}
+#user-name-display{font-size:13px;font-weight:800;color:#fff;}
+#user-role-display{font-size:10px;color:rgba(255,255,255,.5);margin-top:2px;}
+.btn-logout{padding:8px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,.2);
+  background:transparent;color:#fff;font-family:inherit;font-size:12px;font-weight:700;
+  cursor:pointer;transition:all .2s;}
+.btn-logout:hover{background:rgba(255,255,255,.1);border-color:var(--gold);}
+
+/* DASHBOARD */
+.dash-header{display:flex;align-items:center;justify-content:space-between;gap:15px;
+  margin-bottom:20px;flex-wrap:wrap;}
+.dash-header h2{color:var(--navy);font-size:22px;font-weight:900;}
+
+/* BUTTONS */
+.btn-open{padding:10px 18px;border-radius:10px;border:2px solid var(--blue);
+  background:linear-gradient(135deg,var(--blue),var(--sky));color:#fff;
+  font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;
+  transition:all .2s;display:inline-flex;align-items:center;gap:6px;}
+.btn-open:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(21,101,192,.3);}
+.btn-save{background:linear-gradient(135deg,var(--green),#4CAF50);border-color:var(--green);}
+.btn-cancel{background:#fff;color:var(--text);border-color:var(--border);}
+.btn-cancel:hover{border-color:var(--muted);background:var(--bg);}
+.btn-del{padding:6px 12px;border-radius:6px;border:none;
+  background:var(--red);color:#fff;font-size:11px;font-weight:700;cursor:pointer;}
+
+/* STUDENT GRID */
+.students-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+  gap:16px;margin-bottom:20px;}
+.student-card{background:#fff;border-radius:14px;padding:18px;
+  border-right:4px solid var(--blue);box-shadow:var(--shadow);transition:all .2s;}
+.student-card:hover{transform:translateY(-3px);box-shadow:0 6px 24px rgba(0,0,0,.12);}
+.sc-top{display:flex;gap:12px;margin-bottom:14px;}
+.s-av{width:48px;height:48px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:800;}
+.student-card h3{font-size:16px;color:var(--navy);margin-bottom:4px;}
+.s-grade{font-size:12px;color:var(--muted);margin-bottom:8px;}
+.s-dis{display:inline-block;padding:4px 10px;border-radius:6px;
+  font-size:11px;font-weight:700;}
+.sc-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.sc-tag{padding:4px 8px;border-radius:6px;font-size:10px;font-weight:600;}
+.sc-actions{display:flex;gap:8px;}
+.sc-actions .btn-open{width:100%;justify-content:center;padding:8px;}
+
+/* MODALS */
+.modal-overlay{display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.6);backdrop-filter:blur(4px);
+  z-index:300;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:#fff;border-radius:16px;padding:24px;
+  max-width:500px;width:100%;max-height:90vh;overflow-y:auto;
+  box-shadow:0 20px 60px rgba(0,0,0,.3);}
+.modal h3{color:var(--navy);font-size:20px;margin-bottom:20px;}
+.modal-grid{display:grid;gap:15px;margin-bottom:20px;}
+.mfg{display:flex;flex-direction:column;gap:6px;}
+.mfg label{font-size:12px;font-weight:700;color:var(--muted);}
+.mfg input,.mfg select{padding:10px;border:1.5px solid var(--border);
+  border-radius:8px;font-family:inherit;font-size:14px;transition:all .2s;}
+.mfg input:focus,.mfg select:focus{outline:none;border-color:var(--blue);}
+.mfg input.error,.mfg select.error{border-color:var(--red);}
+.field-error{color:var(--red);font-size:11px;margin-top:4px;display:none;}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;}
+
+/* TOAST NOTIFICATIONS */
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);
+  background:var(--navy);color:#fff;padding:12px 24px;border-radius:8px;
+  box-shadow:0 4px 20px rgba(0,0,0,.3);z-index:400;
+  font-size:14px;font-weight:600;opacity:0;transition:opacity .3s;}
+.toast.show{opacity:1;}
+.toast.success{background:var(--green);}
+.toast.error{background:var(--red);}
+
+/* SAVE INDICATOR */
+.save-indicator{position:fixed;bottom:20px;right:20px;
+  background:#fff;padding:8px 16px;border-radius:8px;
+  box-shadow:0 4px 12px rgba(0,0,0,.15);
+  font-size:12px;font-weight:600;color:var(--muted);
+  display:none;z-index:300;}
+.save-indicator.saving{display:block;color:var(--blue);}
+.save-indicator.saved{display:block;color:var(--green);}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:60px 20px;display:none;}
+.empty-state h3{color:var(--muted);font-size:18px;margin-bottom:10px;}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .students-grid{grid-template-columns:1fr;}
+  .dash-header{flex-direction:column;align-items:stretch;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <h1>منصة الخطط التربوية الفردية</h1>
+      <div class="platform-tagline">IEP PLATFORM</div>
+      <div class="school">Finland Oman School</div>
+    </div>
+    <div class="lf">
+      <label>اسم المستخدم</label>
+      <input type="text" id="login-user" placeholder="admin1984, leen, lama..." autocomplete="username">
+    </div>
+    <div class="lf">
+      <label>كلمة المرور</label>
+      <input type="password" id="login-pass" placeholder="أدخل كلمة المرور" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn-login" onclick="doLogin()">تسجيل الدخول</button>
+    <div class="login-error" id="login-error">اسم المستخدم أو كلمة المرور غير صحيحة</div>
+  </div>
+</div>
+
+<!-- APP SCREEN -->
+<div id="app-screen">
+  <header id="top-header">
+    <div class="logo-mark">IEP</div>
+    <div class="header-info">
+      <div class="app-title">منصة الخطط التربوية الفردية</div>
+      <div class="user-info-header">المدرسة الفنلندية العمانية</div>
+    </div>
+    <div class="user-card">
+      <div id="user-avatar">م</div>
+      <div class="user-details">
+        <div id="user-name-display">المستخدم</div>
+        <div id="user-role-display">الدور</div>
+      </div>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">تسجيل الخروج</button>
+  </header>
+
+  <div style="padding:20px;max-width:1400px;margin:0 auto;">
+    <div class="dash-header">
+      <h2 id="dash-title">طلابي</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn-open" onclick="openAddStudent()">
+          ➕ إضافة طالب
+        </button>
+        <button class="btn-open" style="background:linear-gradient(135deg,#6A1B9A,#8E24AA);border-color:#6A1B9A" onclick="openNewAssessment()">
+          ✅ تقييم شامل جديد
+        </button>
+      </div>
+    </div>
+
+    <div class="students-grid" id="students-grid"></div>
+    
+    <div class="empty-state" id="empty-state">
+      <h3>لا يوجد طلاب بعد</h3>
+      <p style="font-size:13px;margin-top:6px;color:var(--muted)">اضغط "إضافة طالب" للبدء</p>
+    </div>
+  </div>
+</div>
+
+<!-- ADD STUDENT MODAL -->
+<div class="modal-overlay" id="add-student-modal">
+  <div class="modal">
+    <h3>إضافة طالب جديد</h3>
+    <div class="modal-grid">
+      <div class="mfg">
+        <label>الاسم الكامل *</label>
+        <input type="text" id="ns-name" placeholder="أدخل الاسم الكامل" required>
+        <div class="field-error" id="ns-name-error">الاسم مطلوب</div>
+      </div>
+      <div class="mfg">
+        <label>الجنس *</label>
+        <select id="ns-gender" required>
+          <option value="">-- اختر --</option>
+          <option value="ذكر">ذكر</option>
+          <option value="أنثى">أنثى</option>
+        </select>
+        <div class="field-error" id="ns-gender-error">الجنس مطلوب</div>
+      </div>
+      <div class="mfg">
+        <label>الصف *</label>
+        <input type="text" id="ns-grade" placeholder="مثال: الأول، الثاني" required>
+        <div class="field-error" id="ns-grade-error">الصف مطلوب</div>
+      </div>
+      <div class="mfg">
+        <label>نوع الإعاقة/الحالة *</label>
+        <input type="text" id="ns-dis" placeholder="مثال: اضطراب طيف توحد" required>
+        <div class="field-error" id="ns-dis-error">نوع الإعاقة مطلوب</div>
+      </div>
+      <div class="mfg">
+        <label>تاريخ الميلاد</label>
+        <input type="date" id="ns-dob">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('add-student-modal')">إلغاء</button>
+      <button class="btn-save btn-open" onclick="saveNewStudent()">💾 حفظ الطالب</button>
+    </div>
+  </div>
+</div>
+
+<!-- SAVE INDICATOR -->
+<div class="save-indicator" id="save-indicator">
+  <span id="save-text">جاري الحفظ...</span>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// FIXED: Complete Platform with Auto-Save & Teacher Isolation
+// ═══════════════════════════════════════════════════════════════
+
+const DB_KEY = 'iep_platform_db';
+const SES_KEY = 'iep_current_session';
+let currentUser = null;
+let autoSaveTimeout = null;
+let charts = {};
+
+// ═══════════════════════════════════════════════════════════════
+// DATABASE FUNCTIONS - FIXED: Proper sync with localStorage & Firebase
+// ═══════════════════════════════════════════════════════════════
+
+function initDB() {
+  return {
+    users: [
+      {id:'admin',name:'عبدالله البلوي',username:'admin1984',password:'admin1984',role:'admin',color:'#C62828',avatar:'ع'},
+      {id:'u1',name:'لين نظامي',username:'leen',password:'100',role:'teacher',color:'#1565C0',avatar:'ل'},
+      {id:'u2',name:'لمى عطوي',username:'lama',password:'200',role:'teacher',color:'#2E7D32',avatar:'ل'},
+      {id:'u3',name:'عطيه سعفي',username:'atia',password:'300',role:'teacher',color:'#880E4F',avatar:'ع'},
+      {id:'u4',name:'جهاد الشختوري',username:'jehad',password:'400',role:'speech',color:'#4527A0',avatar:'ج'},
+      {id:'u5',name:'ساره الشوملي',username:'sara',password:'500',role:'speech',color:'#00695C',avatar:'س'},
+    ],
+    students: []
+  };
+}
+
+// FIXED: Synchronous load with background Firebase sync
+function loadDB() {
+  try {
+    const saved = localStorage.getItem(DB_KEY);
+    if (saved) {
+      const data = JSON.parse(saved);
+      // Always use default users (prevents auth issues)
+      data.users = initDB().users;
+      
+      // Load from Firebase in background
+      if (window.firebaseReady) {
+        loadFromFirebase();
+      }
+      
+      return data;
+    }
+    return initDB();
+  } catch (e) {
+    console.error('Load error:', e);
+    return initDB();
+  }
+}
+
+// FIXED: Background Firebase sync
+function loadFromFirebase() {
+  setTimeout(async () => {
+    try {
+      if (!window.firebaseGetDocs || !window.firebaseCollection) return;
+      
+      const studentsRef = window.firebaseCollection(window.firebaseDB, 'students');
+      const snapshot = await window.firebaseGetDocs(studentsRef);
+      
+      if (!snapshot.empty) {
+        const firebaseStudents = [];
+        snapshot.forEach(doc => firebaseStudents.push({...doc.data(), id: doc.id}));
+        
+        console.log('✅ Loaded', firebaseStudents.length, 'students from Firebase');
+        
+        // FIXED: Merge instead of replace
+        const db = loadDB();
+        const localStudents = db.students || [];
+        
+        // Create a map of existing students by ID
+        const studentMap = new Map();
+        
+        // Add local students first (priority to recent changes)
+        localStudents.forEach(s => studentMap.set(s.id, s));
+        
+        // Add/update from Firebase (but don't override very recent local additions)
+        firebaseStudents.forEach(s => {
+          const existing = studentMap.get(s.id);
+          // Only update if student doesn't exist locally or Firebase version is newer
+          if (!existing || !existing.createdAt || new Date(s.createdAt || 0) > new Date(existing.createdAt || 0)) {
+            studentMap.set(s.id, s);
+          }
+        });
+        
+        // Convert map back to array
+        db.students = Array.from(studentMap.values());
+        localStorage.setItem(DB_KEY, JSON.stringify(db));
+        
+        // Refresh UI if on dashboard
+        if (currentUser && typeof renderDashboard === 'function') {
+          renderDashboard();
+        }
+      }
+    } catch (e) {
+      console.log('Firebase load failed:', e.message);
+    }
+  }, 2000); // ⚡ Changed from 500ms to 2000ms - give time for new student to sync to Firebase first
+}
+
+// FIXED: Save with debounced Firebase sync
+function saveDB(db, skipFirebase = false) {
+  // Save to localStorage immediately
+  localStorage.setItem(DB_KEY, JSON.stringify(db));
+  
+  // Sync to Firebase (debounced - fast)
+  if (!skipFirebase && window.firebaseReady && db.students) {
+    showSaveIndicator('saving');
+    
+    clearTimeout(autoSaveTimeout);
+    autoSaveTimeout = setTimeout(async () => {
+      try {
+        for (const student of db.students) {
+          const studentDoc = window.firebaseDoc(window.firebaseDB, 'students', student.id);
+          await window.firebaseSetDoc(studentDoc, student, {merge: true});
+        }
+        console.log('✅ Firebase sync completed');
+        showSaveIndicator('saved');
+      } catch (e) {
+        console.error('Firebase sync error:', e);
+        showToast('تم الحفظ محلياً فقط', 'error');
+        hideSaveIndicator();
+      }
+    }, 500); // ⚡ Changed from 1000ms to 500ms (faster response)
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AUTH FUNCTIONS - FIXED: Proper validation
+// ═══════════════════════════════════════════════════════════════
+
+function doLogin() {
+  const username = document.getElementById('login-user').value.trim();
+  const password = document.getElementById('login-pass').value.trim();
+  const errorEl = document.getElementById('login-error');
+  
+  // Reset errors
+  errorEl.style.display = 'none';
+  document.getElementById('login-user').classList.remove('error');
+  document.getElementById('login-pass').classList.remove('error');
+  
+  // Validation
+  if (!username) {
+    errorEl.textContent = 'الرجاء إدخال اسم المستخدم';
+    errorEl.style.display = 'block';
+    document.getElementById('login-user').classList.add('error');
+    return;
+  }
+  
+  if (!password) {
+    errorEl.textContent = 'الرجاء إدخال كلمة المرور';
+    errorEl.style.display = 'block';
+    document.getElementById('login-pass').classList.add('error');
+    return;
+  }
+  
+  const db = loadDB();
+  const user = db.users.find(u => u.username === username);
+  
+  if (!user || user.password !== password) {
+    errorEl.textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة';
+    errorEl.style.display = 'block';
+    document.getElementById('login-user').classList.add('error');
+    document.getElementById('login-pass').classList.add('error');
+    return;
+  }
+  
+  // Success
+  currentUser = user;
+  localStorage.setItem(SES_KEY, JSON.stringify({userId: user.id}));
+  launchApp();
+}
+
+function doLogout() {
+  if (confirm('هل تريد تسجيل الخروج؟')) {
+    currentUser = null;
+    localStorage.removeItem(SES_KEY);
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('app-screen').style.display = 'none';
+    document.getElementById('login-user').value = '';
+    document.getElementById('login-pass').value = '';
+  }
+}
+
+function launchApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'block';
+  
+  const av = document.getElementById('user-avatar');
+  av.textContent = currentUser.avatar;
+  av.style.background = currentUser.color;
+  
+  document.getElementById('user-name-display').textContent = currentUser.name;
+  
+  const roles = {
+    teacher: 'أخصائية/أخصائي تربية خاصة',
+    speech: 'أخصائية/أخصائي نطق ولغة',
+    admin: 'مدير النظام'
+  };
+  document.getElementById('user-role-display').textContent = roles[currentUser.role] || currentUser.role;
+  
+  renderDashboard();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DASHBOARD - FIXED: Proper teacher isolation
+// ═══════════════════════════════════════════════════════════════
+
+function renderDashboard() {
+  const db = loadDB();
+  const isAdmin = currentUser.role === 'admin';
+  
+  // FIXED: Teachers only see their own students
+  const students = isAdmin 
+    ? db.students 
+    : db.students.filter(s => s.teacherId === currentUser.id);
+  
+  document.getElementById('dash-title').textContent = isAdmin ? 'جميع الطلاب' : 'طلابي';
+  
+  renderStudentsGrid(students, db);
+  
+  document.getElementById('empty-state').style.display = students.length === 0 ? 'block' : 'none';
+  document.getElementById('students-grid').style.display = students.length > 0 ? 'grid' : 'none';
+}
+
+function renderStudentsGrid(students, db) {
+  const grid = document.getElementById('students-grid');
+  if (!grid) return;
+  
+  grid.innerHTML = students.map(s => {
+    const teacher = db.users.find(u => u.id === s.teacherId);
+    const tc = teacher ? teacher.color : '#64748B';
+    const initials = s.name.split(' ').slice(0,2).map(w => w[0]).join('');
+    const hasIEP = !!s.iepData;
+    
+    return `
+      <div class="student-card" style="border-right-color:${tc}">
+        <div class="sc-top">
+          <div class="s-av" style="background:${tc}22;color:${tc}">${initials}</div>
+          <div style="flex:1">
+            <h3>${s.name}</h3>
+            <div class="s-grade">الصف: ${s.grade} | ${s.gender}</div>
+            <span class="s-dis" style="background:#E3F2FD;color:#1565C0">${s.dis}</span>
+          </div>
+        </div>
+        <div class="sc-meta">
+          ${teacher ? `<span class="sc-tag" style="background:${tc}18;color:${tc}">${teacher.name}</span>` : ''}
+          <span class="sc-tag" style="${hasIEP ? 'background:#E8F5E9;color:#2E7D32' : 'background:#FFEBEE;color:#C62828'}">
+            ${hasIEP ? 'خطة مفعّلة' : 'بدون خطة'}
+          </span>
+        </div>
+        <div class="sc-actions">
+          <button class="btn-open" onclick="openStudentIEP('${s.id}')">
+            📋 فتح الخطة
+          </button>
+          <button class="btn-open" style="background:linear-gradient(135deg,#6A1B9A,#8E24AA);border-color:#6A1B9A" onclick="openAssessment('${s.id}','${s.name}')">
+            ✅ التقييم
+          </button>
+          ${(currentUser.role === 'admin' || currentUser.id === s.teacherId) ? 
+            `<button class="btn-del" onclick="deleteStudent('${s.id}')">🗑️</button>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STUDENT CRUD - FIXED: All buttons work with validation
+// ═══════════════════════════════════════════════════════════════
+
+function openAddStudent() {
+  // Clear form
+  ['ns-name', 'ns-grade', 'ns-dis', 'ns-dob'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('ns-gender').value = '';
+  
+  // Clear errors
+  document.querySelectorAll('.field-error').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.error').forEach(el => el.classList.remove('error'));
+  
+  openModal('add-student-modal');
+}
+
+// FIXED: Proper validation and auto-save
+function saveNewStudent() {
+  const name = document.getElementById('ns-name').value.trim();
+  const gender = document.getElementById('ns-gender').value;
+  const grade = document.getElementById('ns-grade').value.trim();
+  const dis = document.getElementById('ns-dis').value.trim();
+  const dob = document.getElementById('ns-dob').value;
+  
+  // Reset errors
+  document.querySelectorAll('.field-error').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.mfg input, .mfg select').forEach(el => el.classList.remove('error'));
+  
+  let hasError = false;
+  
+  // Validate
+  if (!name) {
+    document.getElementById('ns-name').classList.add('error');
+    document.getElementById('ns-name-error').style.display = 'block';
+    hasError = true;
+  }
+  
+  if (!gender) {
+    document.getElementById('ns-gender').classList.add('error');
+    document.getElementById('ns-gender-error').style.display = 'block';
+    hasError = true;
+  }
+  
+  if (!grade) {
+    document.getElementById('ns-grade').classList.add('error');
+    document.getElementById('ns-grade-error').style.display = 'block';
+    hasError = true;
+  }
+  
+  if (!dis) {
+    document.getElementById('ns-dis').classList.add('error');
+    document.getElementById('ns-dis-error').style.display = 'block';
+    hasError = true;
+  }
+  
+  if (hasError) {
+    showToast('الرجاء ملء جميع الحقول المطلوبة', 'error');
+    return;
+  }
+  
+  const db = loadDB();
+  
+  // FIXED: Auto-assign to current teacher
+  const newStudent = {
+    id: 's' + Date.now(),
+    name,
+    gender,
+    grade,
+    dis,
+    dob,
+    teacherId: currentUser.id, // CRITICAL FIX: Always assign to current user
+    iepData: null,
+    createdAt: new Date().toISOString()
+  };
+  
+  db.students.push(newStudent);
+  saveDB(db); // Auto-save enabled
+  
+  closeModal('add-student-modal');
+  renderDashboard();
+  showToast('✅ تمت إضافة الطالب: ' + name, 'success');
+}
+
+function deleteStudent(id) {
+  const db = loadDB();
+  const student = db.students.find(s => s.id === id);
+  
+  if (!student) return;
+  
+  if (!confirm(`حذف الطالب "${student.name}" وجميع بياناته؟`)) return;
+  
+  db.students = db.students.filter(s => s.id !== id);
+  saveDB(db);
+  
+  // Delete from Firebase
+  if (window.firebaseReady) {
+    const studentDoc = window.firebaseDoc(window.firebaseDB, 'students', id);
+    window.firebaseDeleteDoc(studentDoc).catch(e => console.error('Firebase delete error:', e));
+  }
+  
+  renderDashboard();
+  showToast('تم حذف: ' + student.name, 'success');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NAVIGATION - FIXED: All buttons work
+// ═══════════════════════════════════════════════════════════════
+
+function openStudentIEP(studentId) {
+  window.open(`app.html?studentId=${studentId}`, '_blank');
+}
+
+function openAssessment(studentId, studentName) {
+  window.open(`assessment.html?studentId=${studentId}&studentName=${encodeURIComponent(studentName)}`, '_blank');
+}
+
+function openNewAssessment() {
+  window.open('assessment.html', '_blank');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MODAL CONTROLS
+// ═══════════════════════════════════════════════════════════════
+
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UI FEEDBACK - FIXED: Toast & Save Indicators
+// ═══════════════════════════════════════════════════════════════
+
+function showToast(message, type = 'info') {
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + type;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  
+  setTimeout(() => toast.classList.add('show'), 100);
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => document.body.removeChild(toast), 300);
+  }, 3000);
+}
+
+function showSaveIndicator(state) {
+  const indicator = document.getElementById('save-indicator');
+  const text = document.getElementById('save-text');
+  
+  indicator.className = 'save-indicator ' + state;
+  
+  if (state === 'saving') {
+    text.textContent = 'جاري الحفظ...';
+  } else if (state === 'saved') {
+    text.textContent = '✅ تم الحفظ';
+    setTimeout(hideSaveIndicator, 1000); // ⚡ Changed from 2000ms to 1000ms (faster disappear)
+  }
+}
+
+function hideSaveIndicator() {
+  document.getElementById('save-indicator').className = 'save-indicator';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INITIALIZATION
+// ═══════════════════════════════════════════════════════════════
+
+window.addEventListener('load', () => {
+  // Check session
+  try {
+    const session = localStorage.getItem(SES_KEY);
+    if (session) {
+      const {userId} = JSON.parse(session);
+      const db = loadDB();
+      const user = db.users.find(u => u.id === userId);
+      if (user) {
+        currentUser = user;
+        launchApp();
+        return;
+      }
+    }
+  } catch (e) {
+    console.error('Session restore error:', e);
+  }
+  
+  // Show login
+  document.getElementById('login-screen').style.display = 'flex';
+});
+
+// Prevent data loss on page close
+window.addEventListener('beforeunload', (e) => {
+  if (autoSaveTimeout) {
+    e.preventDefault();
+    e.returnValue = 'لديك تغييرات غير محفوظة. هل تريد المغادرة؟';
+  }
+});
+
+console.log('✅ Platform initialized - All systems operational');
+</script>
+
+</body>
+</html>
