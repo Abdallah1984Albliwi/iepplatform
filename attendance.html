@@ -336,27 +336,70 @@ tbody tr:hover{
 
 <script>
 const DB_KEY = 'iep_platform_db';
+const SES_KEY = 'iep_current_session';
 let currentUser = null;
 let attendanceData = {};
 let studentsData = [];
 
 // Load on page load
 window.onload = function(){
-  // Get current user - FIXED: Use correct session name
-  const session = localStorage.getItem('current_user');
+  // Get current user - FIXED: Use correct session key
+  const session = localStorage.getItem(SES_KEY);
   if(session){
     try {
-      currentUser = JSON.parse(session);
+      const sessionData = JSON.parse(session);
+      // Load user from database using userId
+      const db = loadDB();
+      if(db && db.users && sessionData.userId){
+        currentUser = db.users.find(u => u.id === sessionData.userId);
+      }
     } catch(e) {
       console.error('Session parse error:', e);
-      window.location.href = 'index.html';
-      return;
     }
   }
   
   if(!currentUser){
-    alert('الرجاء تسجيل الدخول أولاً');
-    window.location.href = 'index.html';
+    // Show styled message instead of ugly alert
+    document.body.innerHTML = `
+      <div style="
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        min-height:100vh;
+        background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        font-family: 'Cairo', sans-serif;
+        direction: rtl;
+      ">
+        <div style="
+          background:#fff;
+          padding:40px;
+          border-radius:20px;
+          box-shadow:0 20px 60px rgba(0,0,0,0.3);
+          text-align:center;
+          max-width:400px;
+        ">
+          <div style="font-size:64px;margin-bottom:20px;">🔐</div>
+          <h2 style="color:#0D2137;margin-bottom:15px;font-size:24px;">يلزم تسجيل الدخول</h2>
+          <p style="color:#64748b;margin-bottom:30px;line-height:1.8;">
+            للوصول إلى سجل الحضور والغياب، يرجى تسجيل الدخول أولاً
+          </p>
+          <button onclick="window.location.href='index.html'" style="
+            background:linear-gradient(135deg, #1565C0, #2196F3);
+            color:#fff;
+            border:none;
+            padding:15px 40px;
+            border-radius:10px;
+            font-size:16px;
+            font-weight:600;
+            cursor:pointer;
+            font-family:inherit;
+            box-shadow:0 4px 15px rgba(21,101,192,0.4);
+          ">
+            🔙 الذهاب لتسجيل الدخول
+          </button>
+        </div>
+      </div>
+    `;
     return;
   }
   
@@ -369,6 +412,11 @@ window.onload = function(){
   loadStudents();
   loadAttendance();
 };
+
+function loadDB(){
+  const saved = localStorage.getItem(DB_KEY);
+  return saved ? JSON.parse(saved) : {students: [], users: []};
+}
 
 function loadStudents(){
   const saved = localStorage.getItem(DB_KEY);
