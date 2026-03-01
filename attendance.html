@@ -342,13 +342,20 @@ let studentsData = [];
 
 // Load on page load
 window.onload = function(){
-  // Get current user
-  const session = localStorage.getItem('iep_session');
+  // Get current user - FIXED: Use correct session name
+  const session = localStorage.getItem('current_user');
   if(session){
-    currentUser = JSON.parse(session);
+    try {
+      currentUser = JSON.parse(session);
+    } catch(e) {
+      console.error('Session parse error:', e);
+      window.location.href = 'index.html';
+      return;
+    }
   }
   
   if(!currentUser){
+    alert('الرجاء تسجيل الدخول أولاً');
     window.location.href = 'index.html';
     return;
   }
