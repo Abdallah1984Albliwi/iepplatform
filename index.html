@@ -193,6 +193,143 @@ body{font-family:"Tajawal",sans-serif;background:var(--bg);color:var(--text);min
   .students-grid{grid-template-columns:1fr;}
   .dash-header{flex-direction:column;align-items:stretch;}
 }
+/* ═══════════════════════════════════════════════════════════════
+   NOTIFICATIONS STYLES - NEW ADDITION
+   ═══════════════════════════════════════════════════════════════ */
+.notifications-panel{
+  background:#fff;
+  border-radius:12px;
+  box-shadow:0 2px 12px rgba(0,0,0,0.08);
+  margin-bottom:20px;
+  overflow:hidden;
+}
+
+.notifications-header{
+  background:linear-gradient(135deg,#f9a825,#fbc02d);
+  color:#fff;
+  padding:15px 20px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.notifications-header h3{
+  font-size:16px;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.notification-badge{
+  background:#c62828;
+  color:#fff;
+  padding:2px 8px;
+  border-radius:12px;
+  font-size:12px;
+  font-weight:700;
+}
+
+.notifications-list{
+  padding:0;
+}
+
+.notification-item{
+  padding:15px 20px;
+  border-bottom:1px solid #f0f0f0;
+  display:flex;
+  align-items:center;
+  gap:15px;
+  transition:background 0.2s;
+}
+
+.notification-item:hover{
+  background:#f8fafc;
+}
+
+.notification-item:last-child{
+  border-bottom:none;
+}
+
+.notification-icon{
+  width:40px;
+  height:40px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:20px;
+  flex-shrink:0;
+}
+
+.notification-icon.warning{
+  background:#fff3e0;
+  color:#f57c00;
+}
+
+.notification-icon.danger{
+  background:#ffebee;
+  color:#c62828;
+}
+
+.notification-icon.info{
+  background:#e3f2fd;
+  color:#1565c0;
+}
+
+.notification-content{
+  flex:1;
+}
+
+.notification-title{
+  font-weight:600;
+  color:#0d2137;
+  margin-bottom:4px;
+}
+
+.notification-desc{
+  font-size:13px;
+  color:#64748b;
+}
+
+.notification-time{
+  font-size:12px;
+  color:#94a3b8;
+  flex-shrink:0;
+}
+
+.notification-action{
+  padding:6px 12px;
+  background:linear-gradient(135deg,#1565c0,#2196f3);
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  font-size:12px;
+  font-weight:600;
+  cursor:pointer;
+  font-family:inherit;
+  transition:transform 0.2s;
+}
+
+.notification-action:hover{
+  transform:scale(1.05);
+}
+
+.dismiss-all-btn{
+  background:rgba(255,255,255,0.2);
+  color:#fff;
+  border:none;
+  padding:6px 12px;
+  border-radius:6px;
+  font-size:12px;
+  cursor:pointer;
+  font-family:inherit;
+}
+
+.dismiss-all-btn:hover{
+  background:rgba(255,255,255,0.3);
+}
+
 </style>
 </head>
 <body>
@@ -236,6 +373,13 @@ body{font-family:"Tajawal",sans-serif;background:var(--bg);color:var(--text);min
     <button class="btn-logout" onclick="doLogout()">تسجيل الخروج</button>
   </header>
 
+  <!-- ═══════════════════════════════════════════════════════════════
+       NOTIFICATIONS SYSTEM - NEW ADDITION
+       ═══════════════════════════════════════════════════════════════ -->
+  <div id="notifications-container" style="max-width:1400px;margin:0 auto;padding:0 20px;">
+    <!-- Notifications will be inserted here -->
+  </div>
+
   <div style="padding:20px;max-width:1400px;margin:0 auto;">
     <div class="dash-header">
       <h2 id="dash-title">طلابي</h2>
@@ -245,6 +389,9 @@ body{font-family:"Tajawal",sans-serif;background:var(--bg);color:var(--text);min
         </button>
         <button class="btn-open" style="background:linear-gradient(135deg,#6A1B9A,#8E24AA);border-color:#6A1B9A" onclick="openNewAssessment()">
           ✅ تقييم شامل جديد
+        </button>
+        <button class="btn-open" style="background:linear-gradient(135deg,#00897B,#26A69A);border-color:#00897B" onclick="window.location.href='attendance.html'">
+          📅 سجل الحضور والغياب
         </button>
       </div>
     </div>
@@ -526,6 +673,9 @@ function renderDashboard() {
   
   renderStudentsGrid(students, db);
   
+  // NEW: Render notifications
+  renderNotifications(students);
+  
   document.getElementById('empty-state').style.display = students.length === 0 ? 'block' : 'none';
   document.getElementById('students-grid').style.display = students.length > 0 ? 'grid' : 'none';
 }
@@ -774,6 +924,117 @@ window.addEventListener('beforeunload', (e) => {
     e.returnValue = 'لديك تغييرات غير محفوظة. هل تريد المغادرة؟';
   }
 });
+
+// ═══════════════════════════════════════════════════════════════
+// NOTIFICATIONS SYSTEM - NEW ADDITION
+// ═══════════════════════════════════════════════════════════════
+
+function renderNotifications(students) {
+  const container = document.getElementById('notifications-container');
+  if (!container) return;
+  
+  const notifications = checkForNotifications(students);
+  
+  if (notifications.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+  
+  const html = `
+    <div class="notifications-panel">
+      <div class="notifications-header">
+        <h3>
+          🔔 التنبيهات
+          <span class="notification-badge">${notifications.length}</span>
+        </h3>
+        <button class="dismiss-all-btn" onclick="dismissAllNotifications()">
+          إخفاء الكل
+        </button>
+      </div>
+      <div class="notifications-list">
+        ${notifications.map(n => `
+          <div class="notification-item">
+            <div class="notification-icon ${n.type}">
+              ${n.type === 'danger' ? '⚠️' : n.type === 'warning' ? '⏰' : 'ℹ️'}
+            </div>
+            <div class="notification-content">
+              <div class="notification-title">${n.title}</div>
+              <div class="notification-desc">${n.description}</div>
+            </div>
+            <div class="notification-time">${n.time}</div>
+            <button class="notification-action" onclick="openStudentIEP('${n.studentId}')">
+              فتح الخطة
+            </button>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  
+  container.innerHTML = html;
+}
+
+function checkForNotifications(students) {
+  const notifications = [];
+  const twoDaysAgo = Date.now() - (2 * 24 * 60 * 60 * 1000); // 2 days in milliseconds
+  
+  students.forEach(student => {
+    if (!student.iepData) {
+      // Student has no IEP at all
+      const daysSinceCreated = Math.floor((Date.now() - new Date(student.createdAt || Date.now())) / (24 * 60 * 60 * 1000));
+      
+      if (daysSinceCreated >= 2) {
+        notifications.push({
+          type: 'danger',
+          title: `${student.name} - لا توجد خطة تربوية`,
+          description: 'لم يتم إنشاء الخطة التربوية الفردية لهذا الطالب',
+          time: `منذ ${daysSinceCreated} يوم`,
+          studentId: student.id
+        });
+      }
+      return;
+    }
+    
+    // Check last update date for each section
+    const iepData = typeof student.iepData === 'string' ? JSON.parse(student.iepData) : student.iepData;
+    const lastUpdate = new Date(iepData.lastUpdated || student.createdAt || Date.now());
+    const daysSinceUpdate = Math.floor((Date.now() - lastUpdate) / (24 * 60 * 60 * 1000));
+    
+    // Check if any section is empty or outdated
+    const sections = [
+      { key: 'subjects', name: 'القسم التربوي' },
+      { key: 'ilp', name: 'القسم التعليمي' },
+      { key: 'behGoals', name: 'قسم السلوك' },
+      { key: 'speech', name: 'قسم النطق واللغة' }
+    ];
+    
+    sections.forEach(section => {
+      const sectionData = iepData.state?.[section.key];
+      const isEmpty = !sectionData || 
+                     (Array.isArray(sectionData) && sectionData.length === 0) ||
+                     (typeof sectionData === 'object' && Object.keys(sectionData).length === 0);
+      
+      if (isEmpty && daysSinceUpdate >= 2) {
+        notifications.push({
+          type: 'warning',
+          title: `${student.name} - ${section.name}`,
+          description: `لم يتم ملء ${section.name} منذ ${daysSinceUpdate} يوم`,
+          time: `منذ ${daysSinceUpdate} يوم`,
+          studentId: student.id
+        });
+      }
+    });
+  });
+  
+  return notifications;
+}
+
+function dismissAllNotifications() {
+  const container = document.getElementById('notifications-container');
+  if (container) {
+    container.innerHTML = '';
+  }
+}
 
 console.log('✅ Platform initialized - All systems operational');
 </script>
