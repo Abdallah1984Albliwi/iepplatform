@@ -663,9 +663,10 @@ function launchApp() {
 function renderDashboard() {
   const db = loadDB();
   const isAdmin = currentUser.role === 'admin';
+  const isSpeechTherapist = currentUser.role === 'speech';
   
-  // FIXED: Teachers only see their own students
-  const students = isAdmin 
+  // FIXED: Admin and speech therapists see all students, teachers see their own
+  const students = (isAdmin || isSpeechTherapist)
     ? db.students 
     : db.students.filter(s => s.teacherId === currentUser.id);
   
