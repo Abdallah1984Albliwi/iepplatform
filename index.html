@@ -9,8 +9,11 @@
 <meta name="application-name" content="IEP منصة">
 <meta name="theme-color" content="#0A1628">
 <title>منصة الخطط التربوية — المدرسة الفنلندية العمانية</title>
-<link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="apple-touch-icon" href="favicon.svg">
+<!-- Favicon - Multiple formats for compatibility -->
+<link rel="icon" type="image/svg+xml" href="favicon.svg?v=2">
+<link rel="shortcut icon" type="image/svg+xml" href="favicon.svg?v=2">
+<link rel="apple-touch-icon" href="favicon.svg?v=2">
+<meta name="theme-color" content="#1565C0">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 
@@ -396,6 +399,10 @@ body{font-family:"Tajawal",sans-serif;background:var(--bg);color:var(--text);min
         <button class="btn-open" style="background:linear-gradient(135deg,#00897B,#26A69A);border-color:#00897B" onclick="window.location.href='attendance.html'">
           📅 سجل الحضور والغياب
         </button>
+        <!-- Admin Only: User Management -->
+        <button id="admin-users-btn" class="btn-open" style="background:linear-gradient(135deg,#C62828,#E53935);border-color:#C62828;display:none;" onclick="openUserManagement()">
+          👥 إدارة المستخدمين
+        </button>
       </div>
     </div>
 
@@ -622,6 +629,14 @@ function doLogin() {
     errorEl.style.display = 'block';
     document.getElementById('login-user').classList.add('error');
     document.getElementById('login-pass').classList.add('error');
+    return;
+  }
+  
+  // Check if user is active
+  if (user.active === false) {
+    errorEl.textContent = '⚠️ هذا الحساب معطّل. الرجاء التواصل مع المدير.';
+    errorEl.style.display = 'block';
+    document.getElementById('login-user').classList.add('error');
     return;
   }
   
@@ -1043,8 +1058,343 @@ function dismissAllNotifications() {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// USER MANAGEMENT SYSTEM (ADMIN ONLY)
+// ═══════════════════════════════════════════════════════════════
+
+function openUserManagement() {
+  if (currentUser.role !== 'admin') {
+    alert('❌ هذه الصفحة متاحة للمدير فقط!');
+    return;
+  }
+  
+  document.getElementById('user-management-modal').style.display = 'flex';
+  renderUsersList();
+}
+
+function closeUserManagement() {
+  document.getElementById('user-management-modal').style.display = 'none';
+  // Clear form
+  document.getElementById('new-user-name').value = '';
+  document.getElementById('new-user-username').value = '';
+  document.getElementById('new-user-password').value = '';
+  document.getElementById('new-user-role').value = 'teacher';
+}
+
+function renderUsersList() {
+  const db = loadDB();
+  const usersList = document.getElementById('users-list');
+  
+  if (!db.users || db.users.length === 0) {
+    usersList.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:40px;">لا يوجد مستخدمون</p>';
+    return;
+  }
+  
+  const roleNames = {
+    'admin': 'مدير',
+    'teacher': 'معلم/ة',
+    'speech': 'أخصائي/ة نطق ولغة'
+  };
+  
+  const roleColors = {
+    'admin': '#C62828',
+    'teacher': '#1565C0',
+    'speech': '#6A1B9A'
+  };
+  
+  const html = db.users.map(user => `
+    <div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;padding:15px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+      <div style="flex:1;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <div style="width:40px;height:40px;border-radius:50%;background:${user.color || roleColors[user.role]};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;">
+            ${user.avatar || user.name.charAt(0)}
+          </div>
+          <div>
+            <div style="font-weight:700;color:#0D2137;font-size:15px;">${user.name}</div>
+            <div style="font-size:12px;color:#64748b;">@${user.username}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <span style="background:${roleColors[user.role]};color:#fff;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;">
+            ${roleNames[user.role]}
+          </span>
+          ${user.active === false ? '<span style="background:#F57C00;color:#fff;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;">معطّل</span>' : ''}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="editUser('${user.id}')" style="padding:8px 16px;background:#1565C0;color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit;">
+          ✏️ تعديل
+        </button>
+        <button onclick="toggleUserStatus('${user.id}')" style="padding:8px 16px;background:${user.active === false ? '#2E7D32' : '#F57C00'};color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit;">
+          ${user.active === false ? '✅ تفعيل' : '⏸️ تعطيل'}
+        </button>
+        ${user.role !== 'admin' ? `
+        <button onclick="deleteUser('${user.id}')" style="padding:8px 16px;background:#C62828;color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit;">
+          🗑️ حذف
+        </button>
+        ` : ''}
+      </div>
+    </div>
+  `).join('');
+  
+  usersList.innerHTML = html;
+}
+
+function addNewUser() {
+  const name = document.getElementById('new-user-name').value.trim();
+  const username = document.getElementById('new-user-username').value.trim();
+  const password = document.getElementById('new-user-password').value;
+  const role = document.getElementById('new-user-role').value;
+  
+  // Validation
+  if (!name) {
+    alert('❌ الرجاء إدخال الاسم الكامل');
+    return;
+  }
+  
+  if (!username) {
+    alert('❌ الرجاء إدخال اسم المستخدم');
+    return;
+  }
+  
+  if (username.length < 3) {
+    alert('❌ اسم المستخدم يجب أن يكون 3 أحرف على الأقل');
+    return;
+  }
+  
+  if (!password) {
+    alert('❌ الرجاء إدخال كلمة المرور');
+    return;
+  }
+  
+  if (password.length < 3) {
+    alert('❌ كلمة المرور يجب أن تكون 3 أحرف على الأقل');
+    return;
+  }
+  
+  const db = loadDB();
+  
+  // Check if username already exists
+  if (db.users.some(u => u.username === username)) {
+    alert('❌ اسم المستخدم موجود مسبقاً! اختر اسم آخر.');
+    return;
+  }
+  
+  // Generate ID
+  const userId = 'u' + Date.now();
+  
+  // Get first letter for avatar
+  const avatar = name.charAt(0);
+  
+  // Role colors
+  const roleColors = {
+    'admin': '#C62828',
+    'teacher': '#1565C0',
+    'speech': '#6A1B9A'
+  };
+  
+  // Create new user
+  const newUser = {
+    id: userId,
+    name: name,
+    username: username,
+    password: password,
+    role: role,
+    color: roleColors[role],
+    avatar: avatar,
+    active: true,
+    createdAt: new Date().toISOString(),
+    createdBy: currentUser.id
+  };
+  
+  // Add to database
+  db.users.push(newUser);
+  saveDB(db);
+  
+  // Show success message
+  showToast(`✅ تم إضافة المستخدم: ${name}`, 'success');
+  
+  // Clear form
+  document.getElementById('new-user-name').value = '';
+  document.getElementById('new-user-username').value = '';
+  document.getElementById('new-user-password').value = '';
+  document.getElementById('new-user-role').value = 'teacher';
+  
+  // Refresh list
+  renderUsersList();
+}
+
+function editUser(userId) {
+  const db = loadDB();
+  const user = db.users.find(u => u.id === userId);
+  
+  if (!user) {
+    alert('❌ المستخدم غير موجود!');
+    return;
+  }
+  
+  const newName = prompt('الاسم الجديد:', user.name);
+  if (newName === null) return; // Cancelled
+  
+  if (!newName.trim()) {
+    alert('❌ الاسم لا يمكن أن يكون فارغاً');
+    return;
+  }
+  
+  const newPassword = prompt('كلمة المرور الجديدة (اتركها فارغة للإبقاء على القديمة):', '');
+  
+  // Update user
+  user.name = newName.trim();
+  user.avatar = newName.trim().charAt(0);
+  
+  if (newPassword && newPassword.trim()) {
+    if (newPassword.length < 3) {
+      alert('❌ كلمة المرور يجب أن تكون 3 أحرف على الأقل');
+      return;
+    }
+    user.password = newPassword;
+  }
+  
+  user.updatedAt = new Date().toISOString();
+  user.updatedBy = currentUser.id;
+  
+  saveDB(db);
+  showToast('✅ تم تحديث بيانات المستخدم', 'success');
+  renderUsersList();
+}
+
+function toggleUserStatus(userId) {
+  const db = loadDB();
+  const user = db.users.find(u => u.id === userId);
+  
+  if (!user) {
+    alert('❌ المستخدم غير موجود!');
+    return;
+  }
+  
+  if (user.role === 'admin' && currentUser.id === userId) {
+    alert('❌ لا يمكنك تعطيل حسابك الخاص!');
+    return;
+  }
+  
+  user.active = user.active === false ? true : false;
+  user.updatedAt = new Date().toISOString();
+  user.updatedBy = currentUser.id;
+  
+  saveDB(db);
+  
+  const status = user.active ? 'تفعيل' : 'تعطيل';
+  showToast(`✅ تم ${status} حساب: ${user.name}`, 'success');
+  renderUsersList();
+}
+
+function deleteUser(userId) {
+  const db = loadDB();
+  const user = db.users.find(u => u.id === userId);
+  
+  if (!user) {
+    alert('❌ المستخدم غير موجود!');
+    return;
+  }
+  
+  if (user.role === 'admin') {
+    alert('❌ لا يمكن حذف حساب المدير!');
+    return;
+  }
+  
+  const confirm = window.confirm(`⚠️ هل أنت متأكد من حذف المستخدم:\n\n${user.name} (@${user.username})\n\nهذا الإجراء لا يمكن التراجع عنه!`);
+  
+  if (!confirm) return;
+  
+  // Check if user has students
+  const hasStudents = db.students.some(s => s.teacherId === userId);
+  
+  if (hasStudents) {
+    const confirmWithStudents = window.confirm(
+      `⚠️ تحذير!\n\n` +
+      `هذا المستخدم لديه طلاب مسندين له.\n\n` +
+      `عند الحذف، سيتم إلغاء إسناد الطلاب.\n\n` +
+      `هل تريد المتابعة؟`
+    );
+    
+    if (!confirmWithStudents) return;
+    
+    // Unassign students
+    db.students.forEach(student => {
+      if (student.teacherId === userId) {
+        student.teacherId = null;
+      }
+    });
+  }
+  
+  // Remove user
+  db.users = db.users.filter(u => u.id !== userId);
+  saveDB(db);
+  
+  showToast(`✅ تم حذف المستخدم: ${user.name}`, 'success');
+  renderUsersList();
+}
+
+// Show admin button only for admins
+if (currentUser && currentUser.role === 'admin') {
+  const adminBtn = document.getElementById('admin-users-btn');
+  if (adminBtn) {
+    adminBtn.style.display = 'inline-flex';
+  }
+}
+
 console.log('✅ Platform initialized - All systems operational');
 </script>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     USER MANAGEMENT MODAL (ADMIN ONLY)
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="user-management-modal" class="modal-overlay" style="display:none;">
+  <div class="modal-content" style="max-width:900px;">
+    <div class="modal-header" style="background:linear-gradient(135deg,#C62828,#E53935);">
+      <h2 style="color:#fff;margin:0;">👥 إدارة المستخدمين</h2>
+      <button onclick="closeUserManagement()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:35px;height:35px;border-radius:50%;cursor:pointer;font-size:20px;">✕</button>
+    </div>
+    
+    <div style="padding:20px;">
+      <!-- Add New User Form -->
+      <div style="background:#f8f9fa;padding:20px;border-radius:12px;margin-bottom:20px;">
+        <h3 style="margin:0 0 15px 0;color:#0D2137;">➕ إضافة مستخدم جديد</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+          <div>
+            <label style="display:block;margin-bottom:5px;font-weight:600;font-size:13px;">الاسم الكامل</label>
+            <input type="text" id="new-user-name" placeholder="مثال: أحمد محمد" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:14px;">
+          </div>
+          <div>
+            <label style="display:block;margin-bottom:5px;font-weight:600;font-size:13px;">اسم المستخدم</label>
+            <input type="text" id="new-user-username" placeholder="مثال: ahmed" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:14px;">
+          </div>
+          <div>
+            <label style="display:block;margin-bottom:5px;font-weight:600;font-size:13px;">كلمة المرور</label>
+            <input type="password" id="new-user-password" placeholder="كلمة مرور قوية" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:14px;">
+          </div>
+          <div>
+            <label style="display:block;margin-bottom:5px;font-weight:600;font-size:13px;">الدور</label>
+            <select id="new-user-role" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-size:14px;">
+              <option value="teacher">معلم/ة</option>
+              <option value="speech">أخصائي/ة نطق ولغة</option>
+              <option value="admin">مدير</option>
+            </select>
+          </div>
+        </div>
+        <button onclick="addNewUser()" style="margin-top:15px;padding:12px 30px;background:linear-gradient(135deg,#2E7D32,#43A047);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;">
+          ✅ إضافة المستخدم
+        </button>
+      </div>
+      
+      <!-- Users List -->
+      <div>
+        <h3 style="margin:0 0 15px 0;color:#0D2137;">👥 المستخدمون الحاليون</h3>
+        <div id="users-list" style="max-height:400px;overflow-y:auto;"></div>
+      </div>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>

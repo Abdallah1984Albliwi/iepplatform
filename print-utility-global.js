@@ -13,6 +13,24 @@
        ───────────────────────────────────────────────────────────── */
     
     print: function() {
+      // Show quick reminder about headers/footers
+      const hideReminder = localStorage.getItem('hideHeaderFooterReminder');
+      
+      if (!hideReminder) {
+        const shouldHide = confirm(
+          '💡 تذكير مهم للطباعة:\n\n' +
+          '✅ في نافذة الطباعة، تأكد من إيقاف:\n' +
+          '   "Headers and footers"\n' +
+          '   أو "الرؤوس والتذييلات"\n\n' +
+          'هذا سيزيل رابط الموقع من الأسفل.\n\n' +
+          'اضغط OK لعدم إظهار هذه الرسالة مرة أخرى.'
+        );
+        
+        if (shouldHide) {
+          localStorage.setItem('hideHeaderFooterReminder', 'true');
+        }
+      }
+      
       document.body.classList.add('printing');
       window.print();
       setTimeout(function() {
