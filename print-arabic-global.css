@@ -43,6 +43,13 @@
   @page {
     size: A4 portrait;
     margin: 15mm 20mm 15mm 20mm;
+    /* Hide browser-generated headers and footers */
+    @top-left { content: none; }
+    @top-center { content: none; }
+    @top-right { content: none; }
+    @bottom-left { content: none; }
+    @bottom-center { content: none; }
+    @bottom-right { content: none; }
   }
   
   @page :first {

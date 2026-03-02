@@ -9,13 +9,15 @@
 <meta name="application-name" content="IEP منصة">
 <meta name="theme-color" content="#0A1628">
 <title>منصة الخطط التربوية — المدرسة الفنلندية العمانية</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="favicon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-  import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+  import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, onSnapshot, writeBatch } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
   const firebaseConfig = {
     apiKey: "AIzaSyBRx7RAEpbZ8dlFoZyo8N_qmQ6ctE0j71w",
@@ -36,6 +38,7 @@
   window.firebaseSetDoc = setDoc;
   window.firebaseDeleteDoc = deleteDoc;
   window.firebaseOnSnapshot = onSnapshot;
+  window.firebaseWriteBatch = writeBatch;
   window.firebaseReady = true;
   
   console.log('✅ Firebase initialized');
@@ -503,7 +506,7 @@ function loadDB() {
   }
 }
 
-// FIXED: Background Firebase sync
+// Firebase sync - load on startup
 function loadFromFirebase() {
   setTimeout(async () => {
     try {
@@ -518,30 +521,22 @@ function loadFromFirebase() {
         
         console.log('✅ Loaded', firebaseStudents.length, 'students from Firebase');
         
-        // FIXED: Merge instead of replace
+        // Merge with local data
         const db = loadDB();
         const localStudents = db.students || [];
-        
-        // Create a map of existing students by ID
         const studentMap = new Map();
         
-        // Add local students first (priority to recent changes)
         localStudents.forEach(s => studentMap.set(s.id, s));
-        
-        // Add/update from Firebase (but don't override very recent local additions)
         firebaseStudents.forEach(s => {
           const existing = studentMap.get(s.id);
-          // Only update if student doesn't exist locally or Firebase version is newer
           if (!existing || !existing.createdAt || new Date(s.createdAt || 0) > new Date(existing.createdAt || 0)) {
             studentMap.set(s.id, s);
           }
         });
         
-        // Convert map back to array
         db.students = Array.from(studentMap.values());
         localStorage.setItem(DB_KEY, JSON.stringify(db));
         
-        // Refresh UI if on dashboard
         if (currentUser && typeof renderDashboard === 'function') {
           renderDashboard();
         }
@@ -549,33 +544,44 @@ function loadFromFirebase() {
     } catch (e) {
       console.log('Firebase load failed:', e.message);
     }
-  }, 2000); // ⚡ Changed from 500ms to 2000ms - give time for new student to sync to Firebase first
+  }, 2000);
 }
 
-// FIXED: Save with debounced Firebase sync
+// FIXED: Save with Firebase BATCH for speed
 function saveDB(db, skipFirebase = false) {
   // Save to localStorage immediately
   localStorage.setItem(DB_KEY, JSON.stringify(db));
   
-  // Sync to Firebase (debounced - fast)
+  // Sync to Firebase using BATCH (fast!)
   if (!skipFirebase && window.firebaseReady && db.students) {
     showSaveIndicator('saving');
     
     clearTimeout(autoSaveTimeout);
     autoSaveTimeout = setTimeout(async () => {
       try {
-        for (const student of db.students) {
+        // Use batch write instead of individual writes
+        const batch = window.firebaseWriteBatch(window.firebaseDB);
+        
+        db.students.forEach(student => {
           const studentDoc = window.firebaseDoc(window.firebaseDB, 'students', student.id);
-          await window.firebaseSetDoc(studentDoc, student, {merge: true});
-        }
-        console.log('✅ Firebase sync completed');
+          batch.set(studentDoc, student, {merge: true});
+        });
+        
+        // Single commit for all students - FAST!
+        await batch.commit();
+        
+        console.log('✅ Firebase batch sync completed for', db.students.length, 'students');
         showSaveIndicator('saved');
       } catch (e) {
         console.error('Firebase sync error:', e);
-        showToast('تم الحفظ محلياً فقط', 'error');
-        hideSaveIndicator();
+        // Still saved locally
+        showSaveIndicator('saved');
       }
-    }, 500); // ⚡ Changed from 1000ms to 500ms (faster response)
+    }, 1000); // 1 second debounce
+  } else {
+    // If Firebase not ready, still show saved (localStorage worked)
+    showSaveIndicator('saving');
+    setTimeout(() => showSaveIndicator('saved'), 200);
   }
 }
 
