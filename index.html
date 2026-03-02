@@ -674,6 +674,16 @@ function launchApp() {
   };
   document.getElementById('user-role-display').textContent = roles[currentUser.role] || currentUser.role;
   
+  // Show admin button only for admins
+  const adminBtn = document.getElementById('admin-users-btn');
+  if (adminBtn) {
+    if (currentUser.role === 'admin') {
+      adminBtn.style.display = 'inline-flex';
+    } else {
+      adminBtn.style.display = 'none';
+    }
+  }
+  
   renderDashboard();
 }
 
@@ -1335,13 +1345,6 @@ function deleteUser(userId) {
   renderUsersList();
 }
 
-// Show admin button only for admins
-if (currentUser && currentUser.role === 'admin') {
-  const adminBtn = document.getElementById('admin-users-btn');
-  if (adminBtn) {
-    adminBtn.style.display = 'inline-flex';
-  }
-}
 
 console.log('✅ Platform initialized - All systems operational');
 </script>
