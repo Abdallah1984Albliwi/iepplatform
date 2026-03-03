@@ -382,6 +382,17 @@ body{font-family:"Tajawal",sans-serif;background:var(--bg);color:var(--text);min
       <div class="app-title">منصة الخطط التربوية الفردية</div>
       <div class="user-info-header">المدرسة الفنلندية العمانية</div>
     </div>
+    
+    <!-- SAVE BUTTON WITH TIMER -->
+    <button id="manual-save-btn" onclick="manualSave()" 
+      style="padding:12px 24px;background:linear-gradient(135deg,#2E7D32,#43A047);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:10px;box-shadow:0 4px 12px rgba(46,125,50,0.3);transition:all 0.3s;margin-left:auto;margin-right:20px;"
+      onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 6px 20px rgba(46,125,50,0.5)'"
+      onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 4px 12px rgba(46,125,50,0.3)'">
+      <span id="save-icon">💾</span>
+      <span id="save-text">حفظ الآن</span>
+      <span id="save-timer" style="background:rgba(255,255,255,0.25);padding:4px 10px;border-radius:6px;font-size:12px;font-weight:900;min-width:45px;text-align:center;display:none;">0:00</span>
+    </button>
+    
     <div class="user-card">
       <div id="user-avatar">م</div>
       <div class="user-details">
@@ -1372,12 +1383,21 @@ function addNewUser() {
   
   // Add to database
   db.users.push(newUser);
-  saveDB(db);
   
-  // Force immediate UI update
-  setTimeout(() => {
-    renderUsersList();
-  }, 100);
+  // SAVE IMMEDIATELY - NO DEBOUNCE
+  localStorage.setItem(DB_KEY, JSON.stringify(db));
+  console.log('✅ User added to localStorage:', newUser.username);
+  
+  // Update UI immediately
+  renderUsersList();
+  
+  // Save to Firebase in background (optional)
+  if (window.firebaseReady) {
+    const userDoc = window.firebaseDoc(window.firebaseDB, 'users', newUser.id);
+    window.firebaseSetDoc(userDoc, newUser, { merge: true })
+      .then(() => console.log('✅ User synced to Firebase:', newUser.username))
+      .catch(err => console.error('Firebase sync failed:', err));
+  }
   
   // Show success message
   showToast(`✅ تم إضافة المستخدم: ${name}`, 'success');
@@ -1503,6 +1523,136 @@ function deleteUser(userId) {
   renderUsersList();
 }
 
+
+// ═══════════════════════════════════════════════════════════════
+// MANUAL SAVE WITH LIVE TIMER - PROFESSIONAL FEATURE
+// ═══════════════════════════════════════════════════════════════
+
+let saveInProgress = false;
+let saveStartTime = null;
+let saveTimerInterval = null;
+
+async function manualSave() {
+  if (saveInProgress) {
+    alert('⏳ عملية حفظ جارية بالفعل...');
+    return;
+  }
+  
+  const btn = document.getElementById('manual-save-btn');
+  const icon = document.getElementById('save-icon');
+  const text = document.getElementById('save-text');
+  const timer = document.getElementById('save-timer');
+  
+  // Start save
+  saveInProgress = true;
+  saveStartTime = Date.now();
+  
+  // Change button appearance
+  btn.style.background = 'linear-gradient(135deg,#FFA726,#FB8C00)';
+  icon.textContent = '⏳';
+  text.textContent = 'جاري الحفظ';
+  timer.style.display = 'block';
+  timer.textContent = '0:00';
+  btn.disabled = true;
+  btn.style.cursor = 'not-allowed';
+  btn.style.opacity = '0.8';
+  
+  // Start timer
+  saveTimerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - saveStartTime) / 1000);
+    const minutes = Math.floor(elapsed / 60);
+    const seconds = elapsed % 60;
+    timer.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }, 100);
+  
+  try {
+    // Get current database
+    const db = loadDB();
+    
+    // Save to localStorage immediately
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+    console.log('✅ Saved to localStorage');
+    
+    // Save to Firebase if available
+    if (window.firebaseReady) {
+      const batch = window.firebaseWriteBatch(window.firebaseDB);
+      let itemCount = 0;
+      
+      // Add all students
+      if (db.students && db.students.length > 0) {
+        db.students.forEach(student => {
+          const studentDoc = window.firebaseDoc(window.firebaseDB, 'students', student.id);
+          batch.set(studentDoc, student, { merge: true });
+          itemCount++;
+        });
+      }
+      
+      // Add all users
+      if (db.users && db.users.length > 0) {
+        db.users.forEach(user => {
+          const userDoc = window.firebaseDoc(window.firebaseDB, 'users', user.id);
+          batch.set(userDoc, user, { merge: true });
+          itemCount++;
+        });
+      }
+      
+      // Commit batch
+      await batch.commit();
+      console.log(`✅ Saved ${itemCount} items to Firebase`);
+    }
+    
+    // Stop timer
+    clearInterval(saveTimerInterval);
+    
+    // Calculate final time
+    const totalTime = ((Date.now() - saveStartTime) / 1000).toFixed(2);
+    
+    // Success state
+    btn.style.background = 'linear-gradient(135deg,#2E7D32,#43A047)';
+    icon.textContent = '✅';
+    text.textContent = 'تم الحفظ بنجاح';
+    timer.textContent = `${totalTime}s`;
+    
+    // Show success toast
+    showToast(`✅ تم حفظ جميع البيانات في ${totalTime} ثانية`, 'success');
+    
+    // Reset after 3 seconds
+    setTimeout(() => {
+      btn.style.background = 'linear-gradient(135deg,#2E7D32,#43A047)';
+      icon.textContent = '💾';
+      text.textContent = 'حفظ الآن';
+      timer.style.display = 'none';
+      btn.disabled = false;
+      btn.style.cursor = 'pointer';
+      btn.style.opacity = '1';
+      saveInProgress = false;
+    }, 3000);
+    
+  } catch (error) {
+    // Stop timer
+    clearInterval(saveTimerInterval);
+    
+    // Error state
+    btn.style.background = 'linear-gradient(135deg,#C62828,#E53935)';
+    icon.textContent = '❌';
+    text.textContent = 'فشل الحفظ';
+    timer.style.display = 'none';
+    
+    console.error('Save error:', error);
+    showToast('❌ حدث خطأ في الحفظ - حاول مرة أخرى', 'error');
+    
+    // Reset after 3 seconds
+    setTimeout(() => {
+      btn.style.background = 'linear-gradient(135deg,#2E7D32,#43A047)';
+      icon.textContent = '💾';
+      text.textContent = 'حفظ الآن';
+      btn.disabled = false;
+      btn.style.cursor = 'pointer';
+      btn.style.opacity = '1';
+      saveInProgress = false;
+    }, 3000);
+  }
+}
 
 console.log('✅ Platform initialized - All systems operational');
 </script>
