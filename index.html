@@ -593,12 +593,21 @@ function saveDB(db, skipFirebase = false) {
   }
   
   // ⚡ STEP 3: Background Firebase sync (non-blocking)
-  if (!skipFirebase && window.firebaseReady && db.students) {
+  if (!skipFirebase && window.firebaseReady) {
     
     // Add all students to pending queue
-    db.students.forEach(student => {
-      pendingChanges.add(student.id);
-    });
+    if (db.students && db.students.length > 0) {
+      db.students.forEach(student => {
+        pendingChanges.add('student:' + student.id);
+      });
+    }
+    
+    // Add all users to pending queue (for user management)
+    if (db.users && db.users.length > 0) {
+      db.users.forEach(user => {
+        pendingChanges.add('user:' + user.id);
+      });
+    }
     
     // ⚡ STEP 4: DEBOUNCE - Wait for typing to stop
     // Prevents hundreds of unnecessary Firebase calls
@@ -614,19 +623,30 @@ async function performBatchSync(db) {
   if (!window.firebaseReady || pendingChanges.size === 0) return;
   
   const startTime = Date.now();
-  console.log(`🚀 Starting batch sync for ${pendingChanges.size} students...`);
+  console.log(`🚀 Starting batch sync for ${pendingChanges.size} items...`);
   
   try {
     // ⚡ Use WriteBatch - Single network request!
     const batch = window.firebaseWriteBatch(window.firebaseDB);
     
-    // Only sync students that are in pending queue
-    const studentIds = Array.from(pendingChanges);
-    studentIds.forEach(studentId => {
-      const student = db.students.find(s => s.id === studentId);
-      if (student) {
-        const studentDoc = window.firebaseDoc(window.firebaseDB, 'students', student.id);
-        batch.set(studentDoc, student, { merge: true });
+    // Sync both students and users
+    const itemIds = Array.from(pendingChanges);
+    
+    itemIds.forEach(itemId => {
+      if (itemId.startsWith('student:')) {
+        const studentId = itemId.replace('student:', '');
+        const student = db.students.find(s => s.id === studentId);
+        if (student) {
+          const studentDoc = window.firebaseDoc(window.firebaseDB, 'students', student.id);
+          batch.set(studentDoc, student, { merge: true });
+        }
+      } else if (itemId.startsWith('user:')) {
+        const userId = itemId.replace('user:', '');
+        const user = db.users.find(u => u.id === userId);
+        if (user) {
+          const userDoc = window.firebaseDoc(window.firebaseDB, 'users', user.id);
+          batch.set(userDoc, user, { merge: true });
+        }
       }
     });
     
@@ -637,19 +657,12 @@ async function performBatchSync(db) {
     await batch.commit();
     
     const elapsed = Date.now() - startTime;
-    console.log(`✅ Batch sync completed in ${elapsed}ms for ${studentIds.length} students`);
-    
-    // Optional: Show subtle success indicator
-    // showToast('☁️ تم المزامنة', 'success');
+    console.log(`✅ Batch sync completed in ${elapsed}ms for ${itemIds.length} items`);
     
   } catch (error) {
     console.error('❌ Firebase batch sync failed:', error);
-    
-    // Don't bother the user - data is safe in localStorage
-    // Retry on next save
     console.log('📌 Will retry on next save');
     
-    // Optional: Show network error only if critical
     if (error.code === 'permission-denied') {
       showToast('⚠️ خطأ في الصلاحيات - راجع المدير', 'error');
     }
