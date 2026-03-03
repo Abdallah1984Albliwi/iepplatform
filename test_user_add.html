@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head><meta charset="UTF-8"><title>اختبار إضافة مستخدم</title></head>
+<body style="font-family:Arial;padding:40px;">
+<h1>🧪 اختبار نظام إضافة المستخدمين</h1>
+
+<button onclick="testAdd()" style="padding:15px 30px;background:#2E7D32;color:#fff;border:none;border-radius:8px;font-size:16px;cursor:pointer;">
+  ➕ إضافة مستخدم تجريبي
+</button>
+
+<div id="result" style="margin-top:20px;padding:20px;background:#f0f0f0;border-radius:8px;"></div>
+
+<h3>المستخدمون الحاليون:</h3>
+<div id="users-list" style="margin-top:20px;"></div>
+
+<script>
+const DB_KEY = 'iep_platform_db';
+
+function loadDB() {
+  const data = localStorage.getItem(DB_KEY);
+  if (data) {
+    return JSON.parse(data);
+  }
+  return {users: [], students: []};
+}
+
+function saveDB(db) {
+  localStorage.setItem(DB_KEY, JSON.stringify(db));
+}
+
+function testAdd() {
+  const db = loadDB();
+  
+  const newUser = {
+    id: 'u' + Date.now(),
+    name: 'مستخدم تجريبي ' + Math.floor(Math.random() * 100),
+    username: 'test' + Date.now(),
+    password: '123',
+    role: 'teacher',
+    color: '#1565C0',
+    avatar: 'م',
+    active: true
+  };
+  
+  db.users.push(newUser);
+  saveDB(db);
+  
+  document.getElementById('result').innerHTML = `
+    <h3 style="color:#2E7D32;">✅ تمت الإضافة!</h3>
+    <p>الاسم: ${newUser.name}</p>
+    <p>اسم المستخدم: ${newUser.username}</p>
+    <p>ID: ${newUser.id}</p>
+  `;
+  
+  renderUsers();
+}
+
+function renderUsers() {
+  const db = loadDB();
+  const list = document.getElementById('users-list');
+  
+  if (!db.users || db.users.length === 0) {
+    list.innerHTML = '<p>لا يوجد مستخدمون</p>';
+    return;
+  }
+  
+  const html = db.users.map(user => `
+    <div style="background:#fff;border:2px solid #1565C0;border-radius:10px;padding:15px;margin-bottom:10px;">
+      <strong>${user.name}</strong> (@${user.username}) - ${user.role}
+    </div>
+  `).join('');
+  
+  list.innerHTML = html;
+}
+
+// Load on start
+renderUsers();
+</script>
+</body>
+</html>

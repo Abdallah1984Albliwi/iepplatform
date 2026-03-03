@@ -482,7 +482,6 @@ body{font-family:"Tajawal",sans-serif;background:var(--bg);color:var(--text);min
 const DB_KEY = 'iep_platform_db';
 const SES_KEY = 'iep_current_session';
 let currentUser = null;
-let autoSaveTimeout = null;
 let charts = {};
 
 // ═══════════════════════════════════════════════════════════════
@@ -1374,6 +1373,11 @@ function addNewUser() {
   // Add to database
   db.users.push(newUser);
   saveDB(db);
+  
+  // Force immediate UI update
+  setTimeout(() => {
+    renderUsersList();
+  }, 100);
   
   // Show success message
   showToast(`✅ تم إضافة المستخدم: ${name}`, 'success');
