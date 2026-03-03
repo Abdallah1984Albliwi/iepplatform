@@ -20,8 +20,9 @@
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-  import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, onSnapshot, writeBatch } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+  import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, onSnapshot, writeBatch, enableIndexedDbPersistence } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
+  // Firebase config - API key is safe for public client apps
   const firebaseConfig = {
     apiKey: "AIzaSyBRx7RAEpbZ8dlFoZyo8N_qmQ6ctE0j71w",
     authDomain: "iep-platform-78a8f.firebaseapp.com",
@@ -33,6 +34,18 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
+  
+  // ⚡ ENABLE OFFLINE PERSISTENCE - Instant UI response!
+  enableIndexedDbPersistence(db, { 
+    synchronizeTabs: true // Sync across browser tabs
+  })
+  .catch((err) => {
+    if (err.code === 'failed-precondition') {
+      console.warn('⚠️ Multiple tabs open - persistence enabled in first tab only');
+    } else if (err.code === 'unimplemented') {
+      console.warn('⚠️ Browser doesn\'t support offline persistence');
+    }
+  });
   
   window.firebaseDB = db;
   window.firebaseCollection = collection;
@@ -555,40 +568,112 @@ function loadFromFirebase() {
 }
 
 // FIXED: Save with Firebase BATCH for speed
+// ═══════════════════════════════════════════════════════════════
+// ULTRA-FAST SAVE FUNCTION - OPTIMIZED FOR SPEED
+// ═══════════════════════════════════════════════════════════════
+
+// Debounce timer
+let saveDebounceTimer = null;
+
+// Queue for batch operations
+let pendingChanges = new Set();
+
 function saveDB(db, skipFirebase = false) {
-  // Save to localStorage immediately
-  localStorage.setItem(DB_KEY, JSON.stringify(db));
+  // ⚡ STEP 1: OPTIMISTIC UI - Show "saved" IMMEDIATELY
+  // User sees instant feedback, no waiting!
+  showSaveIndicator('saved');
   
-  // Sync to Firebase using BATCH (fast!)
+  // ⚡ STEP 2: Save to localStorage (instant - ~2ms)
+  try {
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+  } catch (e) {
+    console.error('localStorage save failed:', e);
+    showToast('❌ فشل الحفظ المحلي - المساحة ممتلئة', 'error');
+    return;
+  }
+  
+  // ⚡ STEP 3: Background Firebase sync (non-blocking)
   if (!skipFirebase && window.firebaseReady && db.students) {
-    showSaveIndicator('saving');
     
-    clearTimeout(autoSaveTimeout);
-    autoSaveTimeout = setTimeout(async () => {
-      try {
-        // Use batch write instead of individual writes
-        const batch = window.firebaseWriteBatch(window.firebaseDB);
-        
-        db.students.forEach(student => {
-          const studentDoc = window.firebaseDoc(window.firebaseDB, 'students', student.id);
-          batch.set(studentDoc, student, {merge: true});
-        });
-        
-        // Single commit for all students - FAST!
-        await batch.commit();
-        
-        console.log('✅ Firebase batch sync completed for', db.students.length, 'students');
-        showSaveIndicator('saved');
-      } catch (e) {
-        console.error('Firebase sync error:', e);
-        // Still saved locally
-        showSaveIndicator('saved');
+    // Add all students to pending queue
+    db.students.forEach(student => {
+      pendingChanges.add(student.id);
+    });
+    
+    // ⚡ STEP 4: DEBOUNCE - Wait for typing to stop
+    // Prevents hundreds of unnecessary Firebase calls
+    clearTimeout(saveDebounceTimer);
+    saveDebounceTimer = setTimeout(() => {
+      performBatchSync(db);
+    }, 2000); // 2 second debounce - adjust as needed
+  }
+}
+
+// Separate async function for Firebase sync (runs in background)
+async function performBatchSync(db) {
+  if (!window.firebaseReady || pendingChanges.size === 0) return;
+  
+  const startTime = Date.now();
+  console.log(`🚀 Starting batch sync for ${pendingChanges.size} students...`);
+  
+  try {
+    // ⚡ Use WriteBatch - Single network request!
+    const batch = window.firebaseWriteBatch(window.firebaseDB);
+    
+    // Only sync students that are in pending queue
+    const studentIds = Array.from(pendingChanges);
+    studentIds.forEach(studentId => {
+      const student = db.students.find(s => s.id === studentId);
+      if (student) {
+        const studentDoc = window.firebaseDoc(window.firebaseDB, 'students', student.id);
+        batch.set(studentDoc, student, { merge: true });
       }
-    }, 1000); // 1 second debounce
-  } else {
-    // If Firebase not ready, still show saved (localStorage worked)
-    showSaveIndicator('saving');
-    setTimeout(() => showSaveIndicator('saved'), 200);
+    });
+    
+    // Clear queue before commit (optimistic)
+    pendingChanges.clear();
+    
+    // Commit all at once
+    await batch.commit();
+    
+    const elapsed = Date.now() - startTime;
+    console.log(`✅ Batch sync completed in ${elapsed}ms for ${studentIds.length} students`);
+    
+    // Optional: Show subtle success indicator
+    // showToast('☁️ تم المزامنة', 'success');
+    
+  } catch (error) {
+    console.error('❌ Firebase batch sync failed:', error);
+    
+    // Don't bother the user - data is safe in localStorage
+    // Retry on next save
+    console.log('📌 Will retry on next save');
+    
+    // Optional: Show network error only if critical
+    if (error.code === 'permission-denied') {
+      showToast('⚠️ خطأ في الصلاحيات - راجع المدير', 'error');
+    }
+  }
+}
+
+// Enhanced save indicator (non-blocking)
+function showSaveIndicator(status) {
+  const indicator = document.getElementById('save-indicator');
+  if (!indicator) return;
+  
+  if (status === 'saving') {
+    indicator.textContent = '💾 جاري الحفظ...';
+    indicator.style.background = 'linear-gradient(135deg, #FFA726, #FB8C00)';
+    indicator.style.opacity = '1';
+  } else if (status === 'saved') {
+    indicator.textContent = '✅ تم الحفظ';
+    indicator.style.background = 'linear-gradient(135deg, #2E7D32, #43A047)';
+    indicator.style.opacity = '1';
+    
+    // Fade out after 2 seconds
+    setTimeout(() => {
+      indicator.style.opacity = '0';
+    }, 2000);
   }
 }
 
