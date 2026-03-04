@@ -1607,17 +1607,87 @@ function showNotification(message, type = 'info'){
   setTimeout(() => document.body.removeChild(notif), 3000);
 }
 
-// Auto-save every 5 seconds to portal (fast response)
-setInterval(()=>{
-  if(window.parent && window.parent !== window && _portalStudentId){
-    const data = collectData();
-    window.parent.postMessage({
-      type:'SAVE_IEP',
-      studentId: _portalStudentId,
-      data: JSON.stringify(data)
-    },'*');
+// ═══════════════════════════════════════════════════════════════
+// COLLECT ALL FORM DATA - FOR AUTO-SAVE
+// ═══════════════════════════════════════════════════════════════
+
+function collectFormData() {
+  // Collect all input fields
+  const inputs = document.querySelectorAll('input, textarea, select');
+  const data = {};
+  
+  inputs.forEach(input => {
+    if (input.id) {
+      data[input.id] = input.value;
+    }
+  });
+  
+  return data;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AUTO-SAVE FIXED - SAVES TO LOCALSTORAGE + FIREBASE
+// ═══════════════════════════════════════════════════════════════
+
+// Auto-save every 3 seconds
+setInterval(() => {
+  try {
+    // Get student ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const studentId = urlParams.get('id');
+    
+    if (!studentId) {
+      console.log('⚠️ No student ID in URL');
+      return;
+    }
+    
+    // Collect all form data
+    const data = collectFormData();
+    
+    // Load database
+    const DB_KEY = 'iep_platform_db';
+    const dbStr = localStorage.getItem(DB_KEY);
+    let db = dbStr ? JSON.parse(dbStr) : {students: [], users: []};
+    
+    // Find student index
+    const studentIndex = db.students.findIndex(s => s.id === studentId);
+    
+    if (studentIndex !== -1) {
+      // Update existing student
+      db.students[studentIndex] = {
+        ...db.students[studentIndex],
+        ...data,
+        lastModified: new Date().toISOString(),
+        lastSaved: new Date().toISOString()
+      };
+    } else {
+      // Create new student
+      db.students.push({
+        id: studentId,
+        ...data,
+        createdAt: new Date().toISOString(),
+        lastSaved: new Date().toISOString()
+      });
+    }
+    
+    // SAVE TO LOCALSTORAGE IMMEDIATELY
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+    
+    console.log('✅ Auto-saved student:', studentId, 'at', new Date().toLocaleTimeString());
+    
+    // Save to Firebase in background (optional)
+    if (window.firebaseReady && window.firebaseDB && window.firebaseDoc && window.firebaseSetDoc) {
+      const studentData = db.students[studentIndex !== -1 ? studentIndex : db.students.length - 1];
+      const studentDoc = window.firebaseDoc(window.firebaseDB, 'students', studentId);
+      window.firebaseSetDoc(studentDoc, studentData, { merge: true })
+        .then(() => console.log('✅ Firebase synced:', studentId))
+        .catch(err => console.error('Firebase sync failed:', err));
+    }
+    
+  } catch (error) {
+    console.error('❌ Auto-save error:', error);
   }
-}, 5000); // ⚡ Changed from 60000 to 5000 (5 seconds)
+}, 3000); // Every 3 seconds
 
 // ═══════════════════════════════════════════════════════════════
 // MANUAL SAVE WITH LIVE TIMER - PROFESSIONAL FEATURE
