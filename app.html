@@ -257,6 +257,17 @@ table.t td.mc{text-align:center;width:85px;}
     <button class="tab-btn" onclick="showTab('achieved',this)">الأهداف المنجزة</button>
     <button class="tab-btn" onclick="showTab('sign',this)">التوقيعات</button>
     <div style="flex:1"></div>
+    
+    <!-- SAVE BUTTON WITH LIVE TIMER -->
+    <button id="save-plan-btn" onclick="savePlanNow()" 
+      style="padding:10px 20px;background:linear-gradient(135deg,#2E7D32,#43A047);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;box-shadow:0 3px 10px rgba(46,125,50,0.4);transition:all 0.3s;margin-left:15px;"
+      onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 5px 15px rgba(46,125,50,0.6)'"
+      onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 3px 10px rgba(46,125,50,0.4)'">
+      <span id="save-plan-icon">💾</span>
+      <span id="save-plan-text">حفظ</span>
+      <span id="save-plan-timer" style="background:rgba(255,255,255,0.2);padding:3px 8px;border-radius:5px;font-size:11px;font-weight:900;min-width:40px;text-align:center;display:none;">0:00</span>
+    </button>
+    
     <div class="nav-sep"></div>
     <button class="nav-action" style="color:#FF7043" onclick="goBackToMain()">← العودة للرئيسية</button>
     <button class="nav-action" style="color:#F9A825" onclick="exportPDF()">PDF طباعة / تصدير</button>
@@ -1607,6 +1618,155 @@ setInterval(()=>{
     },'*');
   }
 }, 5000); // ⚡ Changed from 60000 to 5000 (5 seconds)
+
+// ═══════════════════════════════════════════════════════════════
+// MANUAL SAVE WITH LIVE TIMER - PROFESSIONAL FEATURE
+// ═══════════════════════════════════════════════════════════════
+
+let planSaveInProgress = false;
+let planSaveStartTime = null;
+let planSaveTimerInterval = null;
+
+async function savePlanNow() {
+  if (planSaveInProgress) {
+    alert('⏳ عملية حفظ جارية بالفعل - انتظر قليلاً...');
+    return;
+  }
+  
+  const btn = document.getElementById('save-plan-btn');
+  const icon = document.getElementById('save-plan-icon');
+  const text = document.getElementById('save-plan-text');
+  const timer = document.getElementById('save-plan-timer');
+  
+  // Start save process
+  planSaveInProgress = true;
+  planSaveStartTime = Date.now();
+  
+  // Change button to saving state
+  btn.style.background = 'linear-gradient(135deg,#FFA726,#FB8C00)';
+  icon.textContent = '⏳';
+  text.textContent = 'جاري الحفظ';
+  timer.style.display = 'block';
+  timer.textContent = '0:00';
+  btn.disabled = true;
+  btn.style.cursor = 'not-allowed';
+  btn.style.opacity = '0.85';
+  
+  // Start live timer
+  planSaveTimerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - planSaveStartTime) / 1000);
+    const minutes = Math.floor(elapsed / 60);
+    const seconds = elapsed % 60;
+    timer.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }, 100);
+  
+  try {
+    // Collect all form data
+    const data = collectFormData();
+    
+    // Get current database
+    const DB_KEY = 'iep_platform_db';
+    const dbStr = localStorage.getItem(DB_KEY);
+    let db = dbStr ? JSON.parse(dbStr) : {students: [], users: []};
+    
+    // Find and update current student
+    const studentId = new URLSearchParams(window.location.search).get('id');
+    const studentIndex = db.students.findIndex(s => s.id === studentId);
+    
+    if (studentIndex !== -1) {
+      // Update existing student
+      db.students[studentIndex] = {
+        ...db.students[studentIndex],
+        ...data,
+        lastModified: new Date().toISOString()
+      };
+    } else {
+      // Add new student (shouldn't happen, but just in case)
+      db.students.push({
+        id: studentId,
+        ...data,
+        createdAt: new Date().toISOString()
+      });
+    }
+    
+    // Save to localStorage immediately
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+    console.log('✅ Plan saved to localStorage for student:', studentId);
+    
+    // Save to Firebase if available
+    if (window.firebaseReady && window.firebaseDB) {
+      const studentDoc = window.firebaseDoc(window.firebaseDB, 'students', studentId);
+      await window.firebaseSetDoc(studentDoc, db.students[studentIndex !== -1 ? studentIndex : db.students.length - 1], { merge: true });
+      console.log('✅ Plan synced to Firebase for student:', studentId);
+    }
+    
+    // Stop timer
+    clearInterval(planSaveTimerInterval);
+    
+    // Calculate final time
+    const totalTime = ((Date.now() - planSaveStartTime) / 1000).toFixed(2);
+    
+    // Success state
+    btn.style.background = 'linear-gradient(135deg,#2E7D32,#43A047)';
+    icon.textContent = '✅';
+    text.textContent = 'تم الحفظ';
+    timer.textContent = `${totalTime}s`;
+    
+    // Show toast notification
+    if (typeof showToast === 'function') {
+      showToast(`✅ تم حفظ الخطة في ${totalTime} ثانية`, 'success');
+    } else {
+      // Fallback notification
+      const notification = document.createElement('div');
+      notification.textContent = `✅ تم حفظ الخطة في ${totalTime} ثانية`;
+      notification.style.cssText = 'position:fixed;top:20px;right:20px;background:#2E7D32;color:#fff;padding:15px 25px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.3);z-index:99999;font-weight:700;';
+      document.body.appendChild(notification);
+      setTimeout(() => notification.remove(), 3000);
+    }
+    
+    // Reset button after 3 seconds
+    setTimeout(() => {
+      btn.style.background = 'linear-gradient(135deg,#2E7D32,#43A047)';
+      icon.textContent = '💾';
+      text.textContent = 'حفظ';
+      timer.style.display = 'none';
+      btn.disabled = false;
+      btn.style.cursor = 'pointer';
+      btn.style.opacity = '1';
+      planSaveInProgress = false;
+    }, 3000);
+    
+  } catch (error) {
+    // Stop timer
+    clearInterval(planSaveTimerInterval);
+    
+    // Error state
+    btn.style.background = 'linear-gradient(135deg,#C62828,#E53935)';
+    icon.textContent = '❌';
+    text.textContent = 'فشل';
+    timer.style.display = 'none';
+    
+    console.error('Save error:', error);
+    
+    // Show error notification
+    const notification = document.createElement('div');
+    notification.textContent = '❌ حدث خطأ في الحفظ - حاول مرة أخرى';
+    notification.style.cssText = 'position:fixed;top:20px;right:20px;background:#C62828;color:#fff;padding:15px 25px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.3);z-index:99999;font-weight:700;';
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 3000);
+    
+    // Reset button after 3 seconds
+    setTimeout(() => {
+      btn.style.background = 'linear-gradient(135deg,#2E7D32,#43A047)';
+      icon.textContent = '💾';
+      text.textContent = 'حفظ';
+      btn.disabled = false;
+      btn.style.cursor = 'pointer';
+      btn.style.opacity = '1';
+      planSaveInProgress = false;
+    }, 3000);
+  }
+}
 
 </script>
 
