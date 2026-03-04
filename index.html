@@ -531,8 +531,19 @@ function loadDB() {
     const saved = localStorage.getItem(DB_KEY);
     if (saved) {
       const data = JSON.parse(saved);
-      // Always use default users (prevents auth issues)
-      data.users = initDB().users;
+      
+      // Merge default users with saved data (don't override!)
+      const defaultUsers = initDB().users;
+      
+      // If no users in saved data, use defaults
+      if (!data.users || data.users.length === 0) {
+        data.users = defaultUsers;
+      }
+      
+      // Ensure students array exists
+      if (!data.students) {
+        data.students = [];
+      }
       
       // Load from Firebase in background
       if (window.firebaseReady) {

@@ -1174,9 +1174,70 @@ function printAll(){
 //  INIT
 // ═══════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded',()=>{
+  // Load student data from localStorage
+  loadStudentData();
+  
   renderIEP();
   for(let i=0;i<3;i++) addMeetingRow();
 });
+
+// ═══════════════════════════════════════════════════
+//  LOAD STUDENT DATA FROM LOCALSTORAGE
+// ═══════════════════════════════════════════════════
+function loadStudentData() {
+  try {
+    // Get student ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const studentId = urlParams.get('id');
+    
+    if (!studentId) {
+      console.log('⚠️ No student ID in URL');
+      return;
+    }
+    
+    // Load from localStorage
+    const DB_KEY = 'iep_platform_db';
+    const dbStr = localStorage.getItem(DB_KEY);
+    
+    if (!dbStr) {
+      console.log('⚠️ No data in localStorage');
+      return;
+    }
+    
+    const db = JSON.parse(dbStr);
+    const student = db.students ? db.students.find(s => s.id === studentId) : null;
+    
+    if (!student) {
+      console.log('⚠️ Student not found:', studentId);
+      return;
+    }
+    
+    console.log('✅ Loading student data:', studentId);
+    
+    // Load all saved form fields
+    Object.keys(student).forEach(key => {
+      if (key !== 'id' && key !== 'createdAt' && key !== 'lastModified' && key !== 'lastSaved') {
+        const element = document.getElementById(key);
+        if (element) {
+          element.value = student[key] || '';
+        }
+      }
+    });
+    
+    // Trigger header sync if student name exists
+    if (student['s-name']) {
+      const nameInput = document.getElementById('s-name');
+      if (nameInput && typeof syncHeader === 'function') {
+        syncHeader();
+      }
+    }
+    
+    console.log('✅ Student data loaded successfully');
+    
+  } catch (error) {
+    console.error('❌ Error loading student data:', error);
+  }
+}
 
 // ═══════════════════════════════════════════════════
 //  SPEECH & LANGUAGE TAB
@@ -1624,7 +1685,7 @@ setInterval(() => {
     const studentId = urlParams.get('id');
     
     if (!studentId) {
-      console.log('⚠️ No student ID in URL');
+      // No student ID - this is normal on index.html
       return;
     }
     
