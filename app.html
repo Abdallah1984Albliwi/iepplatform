@@ -682,6 +682,13 @@ table.t td.mc{text-align:center;width:85px;}
 
 <script>
 // ═══════════════════════════════════════════════════
+//  GLOBAL VARIABLES FOR MANUAL SAVE
+// ═══════════════════════════════════════════════════
+let planSaveInProgress = false;
+let planSaveStartTime = null;
+let planSaveTimerInterval = null;
+
+// ═══════════════════════════════════════════════════
 //  CONSTANTS
 // ═══════════════════════════════════════════════════
 const MONTHS=[
@@ -1547,27 +1554,7 @@ window.addEventListener('message', function(e){
   renderAll();
 });
 
-// Override saveData to also post to parent window
-const _origSave = saveData;
-saveData = function(){
-  _origSave();  // regular JSON download
-  
-  // Save to Firebase
-  if(window.firebaseDB && _portalStudentId){
-    const data = collectData();
-    saveToFirebase(_portalStudentId, data);
-  }
-  
-  // Also notify parent portal
-  if(window.parent && window.parent !== window && _portalStudentId){
-    const data = collectData();
-    window.parent.postMessage({
-      type:'SAVE_IEP',
-      studentId: _portalStudentId,
-      data: JSON.stringify(data)
-    },'*');
-  }
-};
+// Old saveData function removed - using auto-save and manual save button instead;
 
 // Save IEP data to Firebase
 async function saveToFirebase(studentId, data){
@@ -1692,10 +1679,6 @@ setInterval(() => {
 // ═══════════════════════════════════════════════════════════════
 // MANUAL SAVE WITH LIVE TIMER - PROFESSIONAL FEATURE
 // ═══════════════════════════════════════════════════════════════
-
-let planSaveInProgress = false;
-let planSaveStartTime = null;
-let planSaveTimerInterval = null;
 
 async function savePlanNow() {
   if (planSaveInProgress) {
