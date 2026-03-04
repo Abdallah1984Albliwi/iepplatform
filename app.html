@@ -1214,23 +1214,30 @@ function loadStudentData() {
     
     console.log('✅ Loading student data:', studentId);
     
+    // Restore state object first (if exists)
+    if (student._state) {
+      try {
+        const savedState = JSON.parse(student._state);
+        // Merge saved state with current state
+        if (typeof state !== 'undefined') {
+          Object.assign(state, savedState);
+        }
+        console.log('✅ State restored');
+      } catch (e) {
+        console.error('Failed to restore state:', e);
+      }
+    }
+    
     // Load all saved form fields
     Object.keys(student).forEach(key => {
-      if (key !== 'id' && key !== 'createdAt' && key !== 'lastModified' && key !== 'lastSaved') {
+      if (key !== 'id' && key !== '_state' && key !== 'createdAt' && key !== 'lastModified' && key !== 'lastSaved') {
         const element = document.getElementById(key);
         if (element) {
           element.value = student[key] || '';
+          console.log('✅ Loaded field:', key, '=', student[key]);
         }
       }
     });
-    
-    // Trigger header sync if student name exists
-    if (student['s-name']) {
-      const nameInput = document.getElementById('s-name');
-      if (nameInput && typeof syncHeader === 'function') {
-        syncHeader();
-      }
-    }
     
     console.log('✅ Student data loaded successfully');
     
@@ -1660,15 +1667,20 @@ function showNotification(message, type = 'info'){
 // ═══════════════════════════════════════════════════════════════
 
 function collectFormData() {
-  // Collect all input fields
-  const inputs = document.querySelectorAll('input, textarea, select');
   const data = {};
   
+  // Collect all input, textarea, and select fields
+  const inputs = document.querySelectorAll('input, textarea, select');
   inputs.forEach(input => {
     if (input.id) {
       data[input.id] = input.value;
     }
   });
+  
+  // Also save the complete state object (contains all goals, subjects, etc.)
+  if (typeof state !== 'undefined') {
+    data._state = JSON.stringify(state);
+  }
   
   return data;
 }
