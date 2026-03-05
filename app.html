@@ -1186,9 +1186,9 @@ window.addEventListener('DOMContentLoaded',()=>{
 // ═══════════════════════════════════════════════════
 function loadStudentData() {
   try {
-    // Get student ID from URL
+    // Get student ID from URL (accept both 'id' and 'studentId')
     const urlParams = new URLSearchParams(window.location.search);
-    const studentId = urlParams.get('id');
+    const studentId = urlParams.get('id') || urlParams.get('studentId');
     
     if (!studentId) {
       console.log('⚠️ No student ID in URL');
@@ -1692,9 +1692,9 @@ function collectFormData() {
 // Auto-save every 3 seconds
 setInterval(() => {
   try {
-    // Get student ID from URL
+    // Get student ID from URL (accept both 'id' and 'studentId')
     const urlParams = new URLSearchParams(window.location.search);
-    const studentId = urlParams.get('id');
+    const studentId = urlParams.get('id') || urlParams.get('studentId');
     
     if (!studentId) {
       // No student ID - this is normal on index.html
@@ -1795,8 +1795,9 @@ async function savePlanNow() {
     const dbStr = localStorage.getItem(DB_KEY);
     let db = dbStr ? JSON.parse(dbStr) : {students: [], users: []};
     
-    // Find and update current student
-    const studentId = new URLSearchParams(window.location.search).get('id');
+    // Find and update current student (accept both 'id' and 'studentId')
+    const urlParams = new URLSearchParams(window.location.search);
+    const studentId = urlParams.get('id') || urlParams.get('studentId');
     const studentIndex = db.students.findIndex(s => s.id === studentId);
     
     if (studentIndex !== -1) {
