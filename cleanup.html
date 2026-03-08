@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>🧹 تنظيف البيانات</title>
+<style>
+body {
+  font-family: Arial;
+  padding: 40px;
+  background: #f0f4f8;
+}
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  background: #fff;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+button {
+  width: 100%;
+  padding: 15px;
+  margin: 10px 0;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.3s;
+}
+.btn-clean {
+  background: linear-gradient(135deg, #C62828, #E53935);
+  color: #fff;
+}
+.btn-clean:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(198, 40, 40, 0.4);
+}
+.btn-view {
+  background: linear-gradient(135deg, #1565C0, #1976D2);
+  color: #fff;
+}
+.btn-back {
+  background: #f1f5f9;
+  color: #475569;
+}
+#result {
+  margin-top: 20px;
+  padding: 20px;
+  border-radius: 8px;
+  display: none;
+}
+.success {
+  background: #E8F5E9;
+  color: #2E7D32;
+  border: 2px solid #2E7D32;
+}
+.info {
+  background: #E3F2FD;
+  color: #1565C0;
+  border: 2px solid #1565C0;
+}
+pre {
+  background: #f5f5f5;
+  padding: 15px;
+  border-radius: 8px;
+  overflow: auto;
+  max-height: 400px;
+  font-size: 12px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1 style="text-align:center;color:#0D2137;margin-bottom:10px;">🧹 تنظيف البيانات</h1>
+  <p style="text-align:center;color:#64748b;margin-bottom:30px;">إصلاح البيانات الفاسدة في localStorage</p>
+  
+  <button class="btn-view" onclick="viewData()">👁️ عرض البيانات الحالية</button>
+  <button class="btn-clean" onclick="cleanData()">🧹 تنظيف البيانات الفاسدة</button>
+  <button class="btn-clean" onclick="resetData()" style="background:linear-gradient(135deg,#F9A825,#FBC02D)">🔄 إعادة تعيين كاملة</button>
+  <button class="btn-back" onclick="goBack()">← العودة للمنصة</button>
+  
+  <div id="result"></div>
+</div>
+
+<script>
+const DB_KEY = 'iep_platform_db';
+
+function viewData() {
+  const result = document.getElementById('result');
+  const data = localStorage.getItem(DB_KEY);
+  
+  if (!data) {
+    result.className = 'info';
+    result.style.display = 'block';
+    result.innerHTML = '<h3>⚠️ لا توجد بيانات</h3><p>localStorage فارغ</p>';
+    return;
+  }
+  
+  try {
+    const db = JSON.parse(data);
+    result.className = 'info';
+    result.style.display = 'block';
+    result.innerHTML = `
+      <h3>📊 البيانات الحالية</h3>
+      <p><strong>عدد الطلاب:</strong> ${db.students ? db.students.length : 0}</p>
+      <p><strong>عدد المستخدمين:</strong> ${db.users ? db.users.length : 0}</p>
+      <details>
+        <summary style="cursor:pointer;padding:10px;background:#f1f5f9;border-radius:5px;margin-top:10px;">عرض البيانات الكاملة</summary>
+        <pre>${JSON.stringify(db, null, 2)}</pre>
+      </details>
+    `;
+  } catch (e) {
+    result.className = 'info';
+    result.style.display = 'block';
+    result.innerHTML = `<h3>❌ خطأ في تحليل البيانات</h3><p>${e.message}</p>`;
+  }
+}
+
+function cleanData() {
+  const data = localStorage.getItem(DB_KEY);
+  
+  if (!data) {
+    alert('⚠️ لا توجد بيانات للتنظيف');
+    return;
+  }
+  
+  try {
+    const db = JSON.parse(data);
+    let cleaned = 0;
+    let fixed = 0;
+    
+    // Remove corrupted students
+    const beforeCount = db.students ? db.students.length : 0;
+    db.students = (db.students || []).filter(s => {
+      if (!s) {
+        cleaned++;
+        return false;
+      }
+      if (!s.name && !s['s-name']) {
+        cleaned++;
+        return false;
+      }
+      return true;
+    });
+    
+    // Fix students with s-name but no name
+    db.students.forEach(s => {
+      if (!s.name && s['s-name']) {
+        s.name = s['s-name'];
+        fixed++;
+      }
+    });
+    
+    // Save cleaned data
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+    
+    const result = document.getElementById('result');
+    result.className = 'success';
+    result.style.display = 'block';
+    result.innerHTML = `
+      <h3>✅ تم التنظيف بنجاح!</h3>
+      <p><strong>قبل:</strong> ${beforeCount} طالب</p>
+      <p><strong>بعد:</strong> ${db.students.length} طالب</p>
+      <p><strong>تم حذف:</strong> ${cleaned} طالب فاسد</p>
+      <p><strong>تم إصلاح:</strong> ${fixed} طالب</p>
+      <button style="margin-top:15px;padding:10px 20px;background:#2E7D32;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700;" onclick="location.reload()">تحديث الصفحة</button>
+    `;
+  } catch (e) {
+    alert('❌ خطأ: ' + e.message);
+  }
+}
+
+function resetData() {
+  if (!confirm('⚠️ هل أنت متأكد؟\n\nسيتم حذف جميع البيانات:\n- جميع الطلاب\n- جميع الخطط\n- سيتم الإبقاء على المستخدمين فقط')) {
+    return;
+  }
+  
+  localStorage.clear();
+  sessionStorage.clear();
+  
+  const result = document.getElementById('result');
+  result.className = 'success';
+  result.style.display = 'block';
+  result.innerHTML = `
+    <h3>✅ تم إعادة التعيين!</h3>
+    <p>تم مسح جميع البيانات</p>
+    <p>يمكنك الآن العودة للمنصة والبدء من جديد</p>
+    <button style="margin-top:15px;padding:10px 20px;background:#1565C0;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700;" onclick="goBack()">العودة للمنصة</button>
+  `;
+}
+
+function goBack() {
+  window.location.href = 'index.html';
+}
+</script>
+
+</body>
+</html>
